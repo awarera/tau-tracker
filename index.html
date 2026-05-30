@@ -100,8 +100,8 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 .dm{background:#FFF7ED;color:#C2410C;border:1px solid #FED7AA}
 .dl{background:#F9FAFB;color:#6B7280;border:1px solid #E5E7EB}
 /* Right panel */
-.layout-split{display:grid;grid-template-columns:1fr 380px;gap:14px;align-items:start}
-.panel{background:var(--wh);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);position:sticky;top:90px;overflow:hidden}
+.layout-split{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:14px;align-items:start}
+.panel{background:var(--wh);border:1px solid var(--bd);border-radius:var(--r);box-shadow:var(--sh);position:sticky;top:90px;overflow-y:auto;max-height:calc(100vh - 110px)}
 .panel-empty{padding:40px;text-align:center;color:var(--ink4)}
 .ph{padding:14px 16px;border-bottom:1px solid var(--bd);background:var(--s2)}
 .ph-title{font-size:14px;font-weight:700;color:var(--ink);margin-bottom:2px}
@@ -363,6 +363,22 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 .vdism-sel{background:var(--wh);border:1px solid var(--bd);border-radius:var(--rs);padding:5px 20px 5px 7px;font-family:inherit;font-size:11.5px;color:var(--ink);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A6478' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;max-width:130px}
 .vdism-sel:focus{border-color:var(--peach)}
 
+
+/* Slide-in panel overlay */
+.panel-overlay{position:fixed;top:54px;right:0;width:400px;height:calc(100vh - 54px);
+  overflow-y:auto;background:var(--wh);border-left:1px solid var(--bd);
+  box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:260;
+  transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
+.panel-overlay.open{transform:translateX(0)}
+.panel-backdrop{position:fixed;top:54px;left:0;right:0;bottom:0;
+  background:rgba(0,0,0,.18);z-index:259;display:none;cursor:pointer}
+.panel-backdrop.open{display:block}
+.panel-close{position:absolute;top:12px;right:14px;background:var(--s2);
+  border:1px solid var(--bd);border-radius:var(--rs);padding:3px 10px;
+  font-size:11.5px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit}
+.panel-close:hover{background:var(--s3);color:var(--ink)}
+.layout-single{overflow-x:auto}
+
 </style>
 </head>
 <body>
@@ -448,7 +464,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <select class="sel" id="live-sort" onchange="renderLive()"><option value="bids">Sort: Bids ↓</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
     <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
   </div>
-  <div class="layout-split">
+  <div class="layout-single">
     <div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
@@ -456,7 +472,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
       </table></div>
       <div class="txt-muted" id="live-count" style="margin-top:8px"></div>
     </div>
-    <div class="panel" id="live-panel"><div class="panel-empty" id="live-panel-empty"><div style="font-size:28px;margin-bottom:8px;opacity:.3">👈</div><div>Click a listing to see details</div></div><div id="live-panel-content" style="display:none"></div></div>
+  </div><div id="live-panel-content" style="display:none"></div></div>
   </div>
 </div>
 
@@ -479,7 +495,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <select class="sel" id="upc-sort" onchange="renderUpcoming()"><option value="listed_desc">Newest Listed</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
     <button class="btn bg bsm" onclick="clearFilters('upc')">✕ Clear</button>
   </div>
-  <div class="layout-split">
+  <div class="layout-single">
     <div>
       <div class="tbl-wrap"><table>
         <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
@@ -487,7 +503,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
       </table></div>
       <div class="txt-muted" id="upc-count" style="margin-top:8px"></div>
     </div>
-    <div class="panel" id="upc-panel"><div class="panel-empty" id="upc-panel-empty"><div style="font-size:28px;margin-bottom:8px;opacity:.3">👈</div><div>Click a listing to see details</div></div><div id="upc-panel-content" style="display:none"></div></div>
+  </div><div id="upc-panel-content" style="display:none"></div></div>
   </div>
 </div>
 
@@ -510,30 +526,16 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option><option value="mileage">KM ↑</option></select>
     <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
   </div>
-  <div class="fbar">
-    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="sold-q" placeholder="Search sold archive…" oninput="renderSold()"></div>
-    <select class="sel" id="sold-make" onchange="syncModelFilter('sold');renderSold()"><option value="">All Makes</option></select>
-    <select class="sel" id="sold-model" onchange="renderSold()"><option value="">All Models</option></select>
-    <input class="inp" type="number" id="sold-yearfrom" placeholder="Year from" oninput="renderSold()" style="width:95px"><input class="inp" type="number" id="sold-yearto" placeholder="Year to" oninput="renderSold()" style="width:85px">
-    <select class="sel" id="sold-body" onchange="renderSold()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Sedan</option><option>Hatch</option></select>
-    <select class="sel" id="sold-dc" onchange="renderSold()"><option value="">All Condition</option><option>Rolling</option><option>Not Rolling</option></select>
-    <select class="sel" id="sold-dmg" onchange="renderSold()"><option value="">All Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
-    <select class="sel" id="sold-fuel" onchange="renderSold()"><option value="">All Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
-    <select class="sel" id="sold-drv" onchange="renderSold()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
-    <input class="inp" type="number" id="sold-maxkm" placeholder="Max KM" oninput="renderSold()" style="width:90px">
-    <select class="sel" id="sold-minscore" onchange="renderSold()"><option value="0">Any Score</option><option value="55">Score ≥55</option><option value="65">Score ≥65</option></select>
-    <select class="sel" id="sold-sort" onchange="renderSold()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
-    <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
-  </div>
-  <div class="layout-split">
+  
+  <div class="layout-single">
     <div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Vehicle</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
+        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
         <tbody id="sold-tbody"></tbody>
       </table></div>
       <div class="txt-muted" id="sold-count" style="margin-top:8px"></div>
     </div>
-    <div class="panel" id="sold-panel"><div class="panel-empty" id="sold-panel-empty"><div style="font-size:28px;margin-bottom:8px;opacity:.3">👈</div><div>Click a sold listing to review</div></div><div id="sold-panel-content" style="display:none"></div></div>
+  </div><div id="sold-panel-content" style="display:none"></div></div>
   </div>
 </div>
 
@@ -804,6 +806,18 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   <div class="save-bar"><div class="save-note">Saved to browser storage. Export for backup.</div><div style="display:flex;gap:8px"><button class="btn bg bsm" onclick="exportSettings()">↓ Export</button><button class="btn bp" onclick="saveSettings();showToast('Settings saved','ok')">Save Settings</button></div></div>
 </div>
 
+
+<!-- Global slide-in panel -->
+<div class="panel-backdrop" id="panel-backdrop" onclick="closePanel()"></div>
+<div class="panel-overlay" id="global-panel">
+  <button class="panel-close" onclick="closePanel()">✕ Close</button>
+  <div id="global-panel-empty" class="panel-empty" style="padding-top:60px">
+    <div style="font-size:28px;opacity:.3;margin-bottom:8px">👈</div>
+    <div>Click a listing to see details</div>
+  </div>
+  <div id="global-panel-content"></div>
+</div>
+
 </div><!-- /pg -->
 <script>
 'use strict';
@@ -996,12 +1010,18 @@ function showPanel(stk,scope){
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
   if(!d)return;
   document.querySelectorAll('.trow').forEach(function(r){r.classList.remove('sel-row');});
-  var rows=document.querySelectorAll('[data-stk="'+stk+'"]');
-  rows.forEach(function(r){r.classList.add('sel-row');});
-  var pe=document.getElementById(scope+'-panel-empty');
-  var pc=document.getElementById(scope+'-panel-content');
+  document.querySelectorAll('[data-stk="'+stk+'"]').forEach(function(r){r.classList.add('sel-row');});
+  var pe=document.getElementById('global-panel-empty');
+  var pc=document.getElementById('global-panel-content');
   if(pe)pe.style.display='none';
   if(pc){pc.style.display='block';pc.innerHTML=buildPanel(d,scope);}
+  document.getElementById('global-panel').classList.add('open');
+  document.getElementById('panel-backdrop').classList.add('open');
+}
+function closePanel(){
+  document.getElementById('global-panel').classList.remove('open');
+  document.getElementById('panel-backdrop').classList.remove('open');
+  document.querySelectorAll('.trow').forEach(function(r){r.classList.remove('sel-row');});
 }
 function addToBatch(stk){
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
