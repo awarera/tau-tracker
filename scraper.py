@@ -1,31 +1,28 @@
 #!/usr/bin/env python3
 """
 TAU Tracker — Daily Scraper
-Runs via GitHub Actions daily at 08:00 Nairobi time.
+Runs via GitHub Actions daily at 08:00 Nairobi (EAT).
 
-What it does each run:
-  1. Auto-discovers new listings from TAU's search pages
-  2. Reads seed_stknos.txt (your manually tracked listings)
-  3. Fetches full details for any listing not yet in dataset
-  4. Re-checks all active listings for updated bids / final status
-  5. Fetches live JPY/USD and USD/KES exchange rates
-  6. Saves everything back to data/ for the dashboard to read
+Three listing statuses:
+  active   — auction countdown running, bidding open now
+  upcoming — on sale soon, no active bidding yet
+  ended    — auction completed
 
 Outputs:
-  data/listings.json       — full listing dataset
-  data/rates.json          — today's exchange rates
-  data/rates_history.json  — rolling 30-day rate log
+  data/listings.json        full dataset
+  data/rates.json           today's exchange rates
+  data/rates_history.json   rolling 30-day rate log
 """
 
 import json, re, os, sys, time
-import urllib.request, urllib.error
-from datetime import datetime, timezone
+import urllib.request
+from datetime import datetime, timezone, timedelta
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-DISCOVER_PAGES   = 10    # search pages to crawl each run (10 items/page = 100 listings)
-INITIAL_PAGES    = 50    # pages to crawl on first ever run (builds initial dataset)
-REQUEST_DELAY    = 1.5   # seconds between fetches — be polite to TAU
-MAX_RECHECK      = 50    # max active listings to re-check per run
+DISCOVER_PAGES   = 15    # pages per run after initial (10 items/page)
+INITIAL_PAGES    = 80    # first-ever run — deeper crawl to build dataset
+REQUEST_DELAY    = 1.5   # seconds between detail fetches
+MAX_RECHECK      = 60    # max active/upcoming listings to re-check per run
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT          = os.path.dirname(os.path.abspath(__file__))
@@ -36,15 +33,14 @@ RATES_FILE    = os.path.join(DATA_DIR, 'rates.json')
 HIST_FILE     = os.path.join(DATA_DIR, 'rates_history.json')
 os.makedirs(DATA_DIR, exist_ok=True)
 
-# ── HTTP ───────────────────────────────────────────────────────────────────────
 HEADERS = {
     'User-Agent':      'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) '
-                       'AppleWebKit/537.36 (KHTML, like Gecko) '
-                       'Chrome/124.0.0.0 Safari/537.36',
-    'Accept':          'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+                       'AppleWebKit/537.36 (KHTML, like Gecko) Chrome/124.0 Safari/537.36',
+    'Accept':          'text/html,application/xhtml+xml;q=0.9,*/*;q=0.8',
     'Accept-Language': 'en-US,en;q=0.9',
 }
 
+# ── HTTP helpers ───────────────────────────────────────────────────────────────
 def fetch_html(url, timeout=30):
     try:
         req = urllib.request.Request(url, headers=HEADERS)
@@ -54,17 +50,19 @@ def fetch_html(url, timeout=30):
         print(f"    ✗ {e}")
         return None
 
-def fetch_json_api(url, timeout=10):
+def fetch_json(url, timeout=10):
     try:
-        req = urllib.request.Request(url, headers={'Accept': 'application/json',
-                                                    'User-Agent': HEADERS['User-Agent']})
+        req = urllib.request.Request(url, headers={
+            'Accept': 'application/json',
+            'User-Agent': HEADERS['User-Agent']
+        })
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
     except Exception as e:
-        print(f"    ✗ API error {url}: {e}")
+        print(f"    ✗ API {url}: {e}")
         return None
 
-# ── JSON helpers ───────────────────────────────────────────────────────────────
+# ── JSON persistence ───────────────────────────────────────────────────────────
 def load_json(path, default):
     if os.path.exists(path):
         try:
@@ -78,44 +76,75 @@ def save_json(path, data):
     with open(path, 'w') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
-# ── Discover stkNos from TAU search pages ─────────────────────────────────────
+# ── Time-left parser ───────────────────────────────────────────────────────────
+def parse_time_left(tlv):
+    """
+    Parse TAU time-remaining strings into (status, auction_ends_at ISO | None).
+    Examples:
+      '1day+ 06:35:01'              → active, ~1.27 days from now
+      '2 day 09:05 until the end'   → active, ~2.38 days from now
+      'On sale soon'                → upcoming, None
+      'End'  /  ''                  → ended, None
+    """
+    s = (tlv or '').strip().lower()
+    now = datetime.now(timezone.utc)
+
+    if not s or s == 'end' or s == 'ended':
+        return 'ended', None
+
+    if 'soon' in s or 'not decided' in s or 'sale soon' in s:
+        return 'upcoming', None
+
+    # Look for digit-based countdown
+    if re.search(r'\d', s):
+        try:
+            days = hours = mins = secs = 0
+            dm = re.search(r'(\d+)\s*day', s)
+            hm = re.search(r'(\d+):(\d+):(\d+)', s)  # hh:mm:ss
+            hm2 = re.search(r'(\d+):(\d+)(?!\d)', s)  # hh:mm only
+            if dm:  days  = int(dm.group(1))
+            if hm:  hours, mins, secs = int(hm.group(1)), int(hm.group(2)), int(hm.group(3))
+            elif hm2: hours, mins = int(hm2.group(1)), int(hm2.group(2))
+            delta = timedelta(days=days, hours=hours, minutes=mins, seconds=secs)
+            ends_at = (now + delta).isoformat()
+        except Exception:
+            ends_at = None
+        return 'active', ends_at
+
+    return 'ended', None
+
+# ── Discover stkNos from TAU search ───────────────────────────────────────────
 def discover_stknos(max_pages):
     """
-    Scrape TAU's passenger car search results and extract all stkNos.
-    Returns an ordered list (newest first from TAU's default sort).
+    Crawl TAU search results pages and extract stkNos.
+    Tries the auction category first, then 'on sale soon'.
     """
     found = []
     seen  = set()
-    base  = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={page}'
 
-    print(f"  Scanning {max_pages} search page(s)…")
-    for page in range(1, max_pages + 1):
-        url  = base.format(page=page)
-        html = fetch_html(url)
-        if not html:
-            print(f"  Page {page}: fetch failed, stopping discovery")
-            break
+    # Category-filtered URLs (most relevant first)
+    search_bases = [
+        'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}',
+    ]
 
-        stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
-        new_on_page = 0
-        for stk in stks:
-            if stk not in seen:
-                seen.add(stk)
-                found.append(stk)
-                new_on_page += 1
-
-        print(f"  Page {page}: {new_on_page} new stkNos ({len(found)} total)")
-
-        # Stop early if nothing new on this page (already in our universe)
-        if new_on_page == 0 and page > 1:
-            print("  No new stkNos found — stopping discovery")
-            break
-
-        time.sleep(REQUEST_DELAY)
+    for base in search_bases:
+        print(f"  Source: {base.format(p='…')}")
+        for page in range(1, max_pages + 1):
+            html = fetch_html(base.format(p=page))
+            if not html:
+                print(f"  Page {page}: failed, stopping")
+                break
+            stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
+            added = sum(1 for s in stks if s not in seen and not seen.add(s) and found.append(s) is None)
+            print(f"  Page {page}: {added} new  ({len(found)} total)")
+            if added == 0 and page > 2:
+                print("  No new stkNos — stopping early")
+                break
+            time.sleep(REQUEST_DELAY * 0.5)
 
     return found
 
-# ── Load seed stkNos (manually tracked) ───────────────────────────────────────
+# ── Load seed file ─────────────────────────────────────────────────────────────
 def load_seed():
     if not os.path.exists(SEED_FILE):
         return []
@@ -130,92 +159,117 @@ def load_seed():
                 stks.append(m.group(0))
     return stks
 
-# ── Parse a TAU detail page ────────────────────────────────────────────────────
-def tv(html, label):
-    """Extract table cell value by header label."""
-    for pat in [
-        rf'<th[^>]*>\s*{re.escape(label)}\s*</th>\s*<td[^>]*>(.*?)</td>',
-        rf'<td[^>]*class="[^"]*label[^"]*"[^>]*>\s*{re.escape(label)}\s*</td>\s*<td[^>]*>(.*?)</td>',
-    ]:
-        m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
-        if m:
-            return re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
+# ── Parse TAU detail page ──────────────────────────────────────────────────────
+def tv(html, *labels):
+    """Extract first matching table cell by header label(s)."""
+    for label in labels:
+        for pat in [
+            rf'<th[^>]*>\s*{re.escape(label)}\s*</th>\s*<td[^>]*>(.*?)</td>',
+            rf'<td[^>]*>\s*{re.escape(label)}\s*</td>\s*<td[^>]*>(.*?)</td>',
+        ]:
+            m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
+            if m:
+                return re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
     return ''
 
-def parse_listing(stk, html):
-    d = {
+def parse_listing(stk, html, existing=None):
+    now_iso = datetime.now(timezone.utc).isoformat()
+    d = existing.copy() if existing else {}
+    d.update({
         'stk':        stk,
         'url':        f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}',
-        'fetched_at': datetime.now(timezone.utc).isoformat(),
-        'panels':     {},
-        'airbags':    {},
-        'rmk':        '',
-    }
+        'fetched_at': now_iso,
+        'panels':     d.get('panels', {}),
+        'airbags':    d.get('airbags', {}),
+    })
+    # Set listed_at only on first fetch
+    if 'listed_at' not in d:
+        d['listed_at'] = now_iso
 
-    # ── Price ──────────────────────────────────────────────────────────────────
-    pm = re.search(r'([\d,]+)\s*Yen', html)
+    # ── Price — anchor to "Current Price:" to avoid false matches ─────────────
+    pm = re.search(r'Current\s*Price[^<]*?([\d,]+)\s*Yen', html, re.IGNORECASE)
+    if not pm:
+        pm = re.search(r'([\d,]+)\s*Yen', html)
     d['price'] = int(pm.group(1).replace(',', '')) if pm else None
 
     # ── Bid count ──────────────────────────────────────────────────────────────
     bm = re.search(r'No\.\s*of\s*Bidder[^\d]*(\d+)', html, re.IGNORECASE)
     d['bids'] = int(bm.group(1)) if bm else 0
 
-    # ── Status ─────────────────────────────────────────────────────────────────
-    # "2 day 09:05 until the end" → active   "End" → ended
-    tl  = re.search(r'Time\s*left.*?</[^>]+>([^<]+)', html, re.IGNORECASE | re.DOTALL)
-    tlv = (tl.group(1).strip() if tl else '').strip()
-    # Active = has a real countdown (digits + day/colon pattern), or "on sale soon"
-    d['status'] = 'active' if re.search(r'\d+\s*(day|hr|:)', tlv, re.IGNORECASE) \
-                              or 'soon' in tlv.lower() \
-                           else 'ended'
+    # ── Status + auction end time ──────────────────────────────────────────────
+    tl  = re.search(r'Time\s*left\b[^<]*?(?:</[^>]+>)?\s*([^<\n]+)', html, re.IGNORECASE)
+    tlv = tl.group(1).strip() if tl else ''
+    new_status, ends_at = parse_time_left(tlv)
+
+    prev_status = d.get('status', '')
+    d['status'] = new_status
+    if ends_at:
+        d['auction_ends_at'] = ends_at
+    # Record when a listing transitions to ended
+    if new_status == 'ended' and prev_status in ('active', 'upcoming') and 'ended_at' not in d:
+        d['ended_at'] = now_iso
 
     # ── Basic info ─────────────────────────────────────────────────────────────
     d['sno']   = re.sub(r'No\.', '', tv(html, 'Stock No.')).strip()
-    d['make']  = tv(html, 'Maker')  or tv(html, 'Make')  or ''
-    d['model'] = tv(html, 'Model')  or ''
-    d['grade'] = tv(html, 'Grade')  or ''
-    d['body']  = tv(html, 'Body Type') or ''
+    d['make']  = tv(html, 'Maker', 'Make') or d.get('make', '')
+    d['model'] = tv(html, 'Model')         or d.get('model', '')
+    d['grade'] = tv(html, 'Grade')         or d.get('grade', '')
+    d['body']  = tv(html, 'Body Type')     or d.get('body', '')
 
-    yr_raw = tv(html, 'First Registration') or tv(html, 'Year') or ''
+    yr_raw = tv(html, 'First Registration', 'Year') or ''
     ym = re.search(r'(\d{4})', yr_raw)
-    d['year'] = int(ym.group(1)) if ym else None
+    if ym: d['year'] = int(ym.group(1))
 
     km_raw = tv(html, 'Mileage') or ''
     km = re.search(r'([\d,]+)\s*km', km_raw, re.IGNORECASE)
-    d['mileage'] = int(km.group(1).replace(',', '')) if km else 0
+    if km: d['mileage'] = int(km.group(1).replace(',', ''))
 
-    d['col'] = tv(html, 'Color')   or tv(html, 'Colour') or ''
-    d['drv'] = tv(html, 'Drive System') or tv(html, 'Drive') or ''
-    d['tx']  = tv(html, 'Transmission') or ''
+    d['col'] = tv(html, 'Color', 'Colour') or d.get('col', '')
+    d['drv'] = tv(html, 'Drive System', 'Drive') or d.get('drv', '')
+    d['tx']  = tv(html, 'Transmission')   or d.get('tx', '')
+    d['eng'] = tv(html, 'Engine Type')    or d.get('eng', '')
+    d['fuel']= tv(html, 'Fuel')           or d.get('fuel', '')
+    d['loc'] = tv(html, 'Location', 'Due in Place') or d.get('loc', '')
 
     cc_raw = tv(html, 'Displacement') or ''
-    cc_m   = re.search(r'([\d,]+)', cc_raw)
-    d['cc']  = int(cc_m.group(1).replace(',', '')) if cc_m else 0
-
-    d['eng']  = tv(html, 'Engine Type') or ''
-    d['fuel'] = tv(html, 'Fuel') or ''
-    d['loc']  = tv(html, 'Location') or ''
+    cc_m = re.search(r'([\d,]+)', cc_raw)
+    if cc_m: d['cc'] = int(cc_m.group(1).replace(',', ''))
 
     cap_raw = tv(html, 'Capacity') or ''
-    d['cap'] = int(cap_raw.strip()) if cap_raw.strip().isdigit() else 0
+    if cap_raw.strip().isdigit(): d['cap'] = int(cap_raw.strip())
 
-    # ── Damage fields ──────────────────────────────────────────────────────────
-    d['damage']    = tv(html, 'Area of Damage') or ''
-    d['dc']        = tv(html, 'Drive Condition') or 'Unknown'
-    d['engine_s']  = tv(html, 'Engine (time of assessment)') or ''
-    d['radiator']  = tv(html, 'Radiator & Condenser') or '-'
-    d['shift']     = tv(html, 'Shift Lever') or '-'
-    d['trans_oil'] = tv(html, 'Transmission Oil Pan') or '-'
-    d['main_dmg']  = tv(html, 'Main Damage') or ''
+    # ── Damage info ────────────────────────────────────────────────────────────
+    d['damage']    = tv(html, 'Area of Damage')              or d.get('damage', '')
+    d['dc']        = tv(html, 'Drive Condition')             or d.get('dc', 'Unknown')
+    d['engine_s']  = tv(html, 'Engine (time of assessment)', 'Engine') or d.get('engine_s', '')
+    d['radiator']  = tv(html, 'Radiator & Condenser', 'Radiator') or d.get('radiator', '-')
+    d['shift']     = tv(html, 'Shift Lever')                 or d.get('shift', '-')
+    d['trans_oil'] = tv(html, 'Transmission Oil Pan', 'Oil Pan') or d.get('trans_oil', '-')
+    d['main_dmg']  = tv(html, 'Main Damage')                 or d.get('main_dmg', '')
+
+    # ── Remarks ────────────────────────────────────────────────────────────────
+    rmk_m = re.search(
+        r'Remarks?\s*:?\s*</(?:th|td|strong|b)[^>]*>\s*<(?:td|dd)[^>]*>(.*?)</(?:td|dd)>',
+        html, re.IGNORECASE | re.DOTALL
+    )
+    if not rmk_m:
+        rmk_m = re.search(r'Remarks?\s*[:\n](.*?)(?=\n\n|\Z)', html, re.IGNORECASE | re.DOTALL)
+    if rmk_m:
+        rmk = re.sub(r'<[^>]+>', ' ', rmk_m.group(1)).strip()
+        rmk = re.sub(r'\s+', ' ', rmk)[:500]
+        if len(rmk) > 5:
+            d['rmk'] = rmk
+    if 'rmk' not in d:
+        d['rmk'] = ''
 
     # ── Airbags ────────────────────────────────────────────────────────────────
     ab_sec = re.search(r'[Aa]ir.?bag(.*?)(?=</table>|<h\d)', html, re.DOTALL)
     if ab_sec and 'finished' in ab_sec.group(1).lower():
         d['airbags'] = {'drv': 'Finished', 'pass': 'Finished'}
 
-    # ── Category (for CBM / parts value lookup in dashboard) ──────────────────
-    bl  = d['body'].lower()
-    cc  = d['cc']
+    # ── Category (CBM / parts lookup key) ─────────────────────────────────────
+    bl = (d.get('body') or '').lower()
+    cc = d.get('cc', 0)
     if 'kei' in bl and ('rv' in bl or 'suv' in bl or 'jeep' in bl):
         d['cat'] = 'kei-suv'
     elif 'kei' in bl:
@@ -227,35 +281,29 @@ def parse_listing(stk, html):
     elif any(k in bl for k in ['sedan', 'saloon', 'hardtop']):
         d['cat'] = 'sedan'
     else:
-        d['cat'] = 'hatch'
+        d['cat'] = d.get('cat', 'hatch')
 
     return d
 
 # ── Exchange rates ─────────────────────────────────────────────────────────────
 def fetch_rates():
-    rates = {
-        'jpu':        0.0064,
-        'usdKes':     130.0,
-        'fetched_at': datetime.now(timezone.utc).isoformat(),
-    }
+    rates = {'jpu': 0.0064, 'usdKes': 130.0,
+             'fetched_at': datetime.now(timezone.utc).isoformat()}
 
-    # JPY → USD  (Frankfurter — ECB, free, no key)
-    data = fetch_json_api('https://api.frankfurter.app/latest?from=JPY&to=USD')
+    data = fetch_json('https://api.frankfurter.app/latest?from=JPY&to=USD')
     if data and 'rates' in data:
         rates['jpu'] = round(data['rates']['USD'], 7)
         print(f"  JPY/USD : {rates['jpu']}")
 
-    # USD → KES  (open.er-api.com — free, no key, covers KES)
-    data = fetch_json_api('https://open.er-api.com/v6/latest/USD')
+    data = fetch_json('https://open.er-api.com/v6/latest/USD')
     if data and 'rates' in data and 'KES' in data['rates']:
         rates['usdKes'] = round(data['rates']['KES'], 2)
         print(f"  USD/KES : {rates['usdKes']}")
     else:
-        # Fallback
-        data = fetch_json_api('https://api.exchangerate-api.com/v4/latest/USD')
+        data = fetch_json('https://api.exchangerate-api.com/v4/latest/USD')
         if data and 'rates' in data and 'KES' in data['rates']:
             rates['usdKes'] = round(data['rates']['KES'], 2)
-            print(f"  USD/KES : {rates['usdKes']} (fallback API)")
+            print(f"  USD/KES : {rates['usdKes']} (fallback)")
 
     return rates
 
@@ -273,78 +321,76 @@ def main():
     print(f"TAU Tracker  ·  {ts}")
     print('─' * 56)
 
-    # 1. Load existing data
-    listings = load_json(LISTINGS_FILE, [])
-    existing = {l['stk'] for l in listings}
-    print(f"Existing dataset  : {len(listings)} listings")
+    listings  = load_json(LISTINGS_FILE, [])
+    by_stk    = {l['stk']: l for l in listings}
+    print(f"Dataset       : {len(listings)} listings  "
+          f"({sum(1 for l in listings if l.get('status')=='active')} active  "
+          f"{sum(1 for l in listings if l.get('status')=='upcoming')} upcoming  "
+          f"{sum(1 for l in listings if l.get('status')=='ended')} ended)")
 
-    # 2. Determine how many pages to crawl
-    # First run (empty or tiny dataset) → deeper crawl
     pages = INITIAL_PAGES if len(listings) < 50 else DISCOVER_PAGES
-    print(f"\n── Auto-discovery ({pages} page(s)) ──")
+    print(f"\n── Discovery ({pages} pages) ──")
     discovered = discover_stknos(pages)
 
-    # 3. Seed file (manually tracked URLs)
     seed = load_seed()
-    print(f"\nSeed file         : {len(seed)} stkNos")
+    print(f"Seed file     : {len(seed)}")
 
-    # 4. Merge: discovered + seed, de-duped, new only
-    all_candidates = list(dict.fromkeys(discovered + seed))   # preserve order, dedup
-    new_stks = [s for s in all_candidates if s not in existing]
-    print(f"New to fetch      : {len(new_stks)}")
+    all_candidates = list(dict.fromkeys(discovered + seed))
+    new_stks = [s for s in all_candidates if s not in by_stk]
+    print(f"New to fetch  : {len(new_stks)}")
 
-    # 5. Fetch new listings
+    # Fetch new listings
     print(f"\n── Fetching {len(new_stks)} new listing(s) ──")
     fetched = failed = 0
     for stk in new_stks:
         url = f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}'
-        print(f"  → {stk[:12]}…  ", end='', flush=True)
+        print(f"  {stk[:12]}… ", end='', flush=True)
         html = fetch_html(url)
         if html:
             d = parse_listing(stk, html)
-            listings.append(d)
+            by_stk[stk] = d
             fetched += 1
-            p = ('¥' + f"{d['price']:,}") if d.get('price') else 'no price'
-            print(f"✓  {d.get('make','')} {d.get('model',''):<12} {p:<14} "
-                  f"{d.get('bids',0):>3} bids  [{d['status']}]")
+            p = f"¥{d['price']:,}" if d.get('price') else '—'
+            print(f"✓ {d.get('make',''):<8} {d.get('model',''):<14} "
+                  f"{p:<12} {d.get('bids',0):>3}b  [{d['status']}]")
         else:
             failed += 1
-            print('✗  failed')
+            print('✗')
         time.sleep(REQUEST_DELAY)
 
-    # 6. Re-check active listings for live bid updates
-    active = [l for l in listings if l.get('status') == 'active']
-    active = active[:MAX_RECHECK]   # cap to avoid very long runs
-    if active:
-        print(f"\n── Re-checking {len(active)} active listing(s) ──")
-        for listing in active:
+    # Re-check active + upcoming listings
+    to_recheck = [l for l in by_stk.values()
+                  if l.get('status') in ('active', 'upcoming')][:MAX_RECHECK]
+    if to_recheck:
+        print(f"\n── Re-checking {len(to_recheck)} live/upcoming listing(s) ──")
+        for listing in to_recheck:
             html = fetch_html(listing['url'])
             if html:
-                updated = parse_listing(listing['stk'], html)
                 prev_bids   = listing.get('bids', 0)
                 prev_status = listing.get('status', '')
-                for f in ['price', 'bids', 'status', 'fetched_at']:
-                    listing[f] = updated.get(f, listing.get(f))
-                flag  = ' ← ended'  if listing['status'] == 'ended' else ''
-                delta = f" (+{listing['bids']-prev_bids})" if listing['bids'] > prev_bids else ''
-                print(f"  ↻ {listing.get('make','')} {listing.get('model',''):<12} "
-                      f"{listing['bids']:>3} bids{delta}{flag}")
+                updated = parse_listing(listing['stk'], html, existing=listing)
+                by_stk[listing['stk']] = updated
+                delta  = f" (+{updated['bids']-prev_bids})" if updated['bids'] > prev_bids else ''
+                change = f" → {updated['status']}" if updated['status'] != prev_status else ''
+                print(f"  ↻ {updated.get('make',''):<8} {updated.get('model',''):<12} "
+                      f"{updated['bids']:>3}b{delta}{change}")
             time.sleep(REQUEST_DELAY * 0.7)
 
-    # 7. Save listings
-    save_json(LISTINGS_FILE, listings)
-    total   = len(listings)
-    n_live  = sum(1 for l in listings if l.get('status') == 'active')
-    n_ended = total - n_live
-    print(f"\nSaved  {total} listings  "
-          f"({fetched} new · {failed} failed · {n_live} live · {n_ended} ended)")
+    # Save
+    all_listings = list(by_stk.values())
+    save_json(LISTINGS_FILE, all_listings)
+    n_active   = sum(1 for l in all_listings if l.get('status') == 'active')
+    n_upcoming = sum(1 for l in all_listings if l.get('status') == 'upcoming')
+    n_ended    = sum(1 for l in all_listings if l.get('status') == 'ended')
+    print(f"\nSaved {len(all_listings)}  "
+          f"({fetched} new  {failed} failed  "
+          f"| {n_active} active  {n_upcoming} upcoming  {n_ended} ended)")
 
-    # 8. Exchange rates
-    print(f"\n── Exchange rates ──")
+    print(f"\n── Rates ──")
     rates = fetch_rates()
     save_json(RATES_FILE, rates)
     update_history(rates)
-    print(f"  ¥1 = KES {round(rates['jpu'] * rates['usdKes'], 4):.4f}")
+    print(f"  ¥1 = KES {round(rates['jpu']*rates['usdKes'],4):.4f}")
 
     print('\n✓  Done')
     return 0 if failed == 0 else 1
