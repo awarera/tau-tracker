@@ -382,7 +382,8 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 <div class="nav-wrap">
   <div class="nav">
     <button class="nb on" onclick="goTab('dash',this)">📊 Dashboard</button>
-    <button class="nb" onclick="goTab('live',this)">🔴 Live Auctions</button>
+    <button class="nb" onclick="goTab('live',this)">🔴 Active Auctions</button>
+    <button class="nb" onclick="goTab('upcoming',this)">🕐 Upcoming</button>
     <button class="nb" onclick="goTab('sold',this)">✅ Sold Archive</button>
     <button class="nb" onclick="goTab('intel',this)">🧠 Intelligence</button>
     <button class="nb" onclick="goTab('models',this)">🚗 Models</button>
@@ -414,8 +415,24 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   </div>
 </div>
 
-<!-- ═══ LIVE AUCTIONS ═══ -->
+<!-- ═══ ACTIVE AUCTIONS ═══ -->
 <div class="tab" id="tab-live">
+  <div class="fbar">
+    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="live-q" placeholder="Search make, model, grade…" oninput="renderLive()"></div>
+    <select class="sel" id="live-make" onchange="renderLive();syncModelFilter('live')"><option value="">All Makes</option></select>
+    <select class="sel" id="live-model" onchange="renderLive()"><option value="">All Models</option></select>
+    <select class="sel" id="live-body" onchange="renderLive()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Hatch</option><option>Sedan</option></select>
+    <select class="sel" id="live-dc" onchange="renderLive()"><option value="">Any Condition</option><option>Rolling</option><option>Not Rolling</option></select>
+    <select class="sel" id="live-engine" onchange="renderLive()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
+    <select class="sel" id="live-dmg" onchange="renderLive()"><option value="">Any Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
+    <select class="sel" id="live-fuel" onchange="renderLive()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
+    <select class="sel" id="live-drv" onchange="renderLive()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
+    <input class="inp" type="number" id="live-yearfrom" placeholder="Year from" oninput="renderLive()" style="width:90px">
+    <input class="inp" type="number" id="live-yearto" placeholder="Year to" oninput="renderLive()" style="width:80px">
+    <input class="inp" type="number" id="live-maxkm" placeholder="Max KM" oninput="renderLive()" style="width:90px">
+    <select class="sel" id="live-sort" onchange="renderLive()"><option value="ends_asc">Ending Soonest</option><option value="bids">Most Bids</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option><option value="mileage">KM ↑</option></select>
+    <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
+  </div>
   <div class="fbar">
     <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="live-q" placeholder="Search make, model, grade…" oninput="renderLive()"></div>
     <select class="sel" id="live-make" onchange="syncModelFilter('live');renderLive()"><option value="">All Makes</option></select>
@@ -434,7 +451,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   <div class="layout-split">
     <div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Vehicle</th><th>Year / KM</th><th>Damage</th><th>DC / Spec</th><th>Price ¥ / USD / KES</th><th>Bids</th><th>Score</th><th>KE Demand</th><th>Batch</th></tr></thead>
+        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
         <tbody id="live-tbody"></tbody>
       </table></div>
       <div class="txt-muted" id="live-count" style="margin-top:8px"></div>
@@ -443,8 +460,56 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   </div>
 </div>
 
+
+<!-- ═══ UPCOMING ═══ -->
+<div class="tab" id="tab-upcoming">
+  <div class="fbar">
+    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="upc-q" placeholder="Search upcoming listings…" oninput="renderUpcoming()"></div>
+    <select class="sel" id="upc-make" onchange="renderUpcoming();syncModelFilter('upc')"><option value="">All Makes</option></select>
+    <select class="sel" id="upc-model" onchange="renderUpcoming()"><option value="">All Models</option></select>
+    <select class="sel" id="upc-body" onchange="renderUpcoming()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Hatch</option><option>Sedan</option></select>
+    <select class="sel" id="upc-dc" onchange="renderUpcoming()"><option value="">Any Condition</option><option>Rolling</option><option>Not Rolling</option></select>
+    <select class="sel" id="upc-engine" onchange="renderUpcoming()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
+    <select class="sel" id="upc-dmg" onchange="renderUpcoming()"><option value="">Any Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
+    <select class="sel" id="upc-fuel" onchange="renderUpcoming()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
+    <select class="sel" id="upc-drv" onchange="renderUpcoming()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
+    <input class="inp" type="number" id="upc-yearfrom" placeholder="Year from" oninput="renderUpcoming()" style="width:90px">
+    <input class="inp" type="number" id="upc-yearto" placeholder="Year to" oninput="renderUpcoming()" style="width:80px">
+    <select class="sel" id="upc-daterange" onchange="renderUpcoming()"><option value="">Any time</option><option value="7">Listed last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option></select>
+    <select class="sel" id="upc-sort" onchange="renderUpcoming()"><option value="listed_desc">Newest Listed</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
+    <button class="btn bg bsm" onclick="clearFilters('upc')">✕ Clear</button>
+  </div>
+  <div class="layout-split">
+    <div>
+      <div class="tbl-wrap"><table>
+        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
+        <tbody id="upc-tbody"></tbody>
+      </table></div>
+      <div class="txt-muted" id="upc-count" style="margin-top:8px"></div>
+    </div>
+    <div class="panel" id="upc-panel"><div class="panel-empty" id="upc-panel-empty"><div style="font-size:28px;margin-bottom:8px;opacity:.3">👈</div><div>Click a listing to see details</div></div><div id="upc-panel-content" style="display:none"></div></div>
+  </div>
+</div>
+
 <!-- ═══ SOLD ARCHIVE ═══ -->
 <div class="tab" id="tab-sold">
+  <div class="fbar">
+    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="sold-q" placeholder="Search sold archive…" oninput="renderSold()"></div>
+    <select class="sel" id="sold-make" onchange="renderSold();syncModelFilter('sold')"><option value="">All Makes</option></select>
+    <select class="sel" id="sold-model" onchange="renderSold()"><option value="">All Models</option></select>
+    <select class="sel" id="sold-body" onchange="renderSold()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Hatch</option><option>Sedan</option></select>
+    <select class="sel" id="sold-dc" onchange="renderSold()"><option value="">Any Condition</option><option>Rolling</option><option>Not Rolling</option></select>
+    <select class="sel" id="sold-engine" onchange="renderSold()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
+    <select class="sel" id="sold-dmg" onchange="renderSold()"><option value="">Any Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
+    <select class="sel" id="sold-fuel" onchange="renderSold()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
+    <select class="sel" id="sold-drv" onchange="renderSold()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
+    <input class="inp" type="number" id="sold-yearfrom" placeholder="Year from" oninput="renderSold()" style="width:90px">
+    <input class="inp" type="number" id="sold-yearto" placeholder="Year to" oninput="renderSold()" style="width:80px">
+    <input class="inp" type="number" id="sold-maxkm" placeholder="Max KM" oninput="renderSold()" style="width:90px">
+    <select class="sel" id="sold-daterange" onchange="renderSold()"><option value="">Any time</option><option value="7">Sold last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option><option value="90">Last 90d</option></select>
+    <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option><option value="mileage">KM ↑</option></select>
+    <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
+  </div>
   <div class="fbar">
     <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="sold-q" placeholder="Search sold archive…" oninput="renderSold()"></div>
     <select class="sel" id="sold-make" onchange="syncModelFilter('sold');renderSold()"><option value="">All Makes</option></select>
@@ -463,7 +528,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   <div class="layout-split">
     <div>
       <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Vehicle</th><th>Year/KM</th><th>Damage</th><th>DC</th><th>Final ¥</th><th>Bids</th><th>Score</th><th>KE Demand</th></tr></thead>
+        <thead><tr><th>Stock</th><th>Vehicle</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
         <tbody id="sold-tbody"></tbody>
       </table></div>
       <div class="txt-muted" id="sold-count" style="margin-top:8px"></div>
@@ -589,7 +654,7 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Body</th><th>Fuel</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD / KES</th><th>Bids</th><th>Score</th><th>Batch</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Body</th><th>Engine</th><th>Fuel</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -769,7 +834,7 @@ var KE_DMG_CLS={'Very High':'dvh','High':'dh','Medium':'dm','Low':'dl'};
 /* ─── ALL DATA ─── */
 var ALL_DATA=[
   // REAL LISTINGS (fetched from TAU)
-  {stk:'b27f40710693e53e205a3f44ce075bb9',sno:'1388137',make:'SUBARU',model:'XV',grade:'2.0I-L EYESIGHT',body:'SUV',cat:'mid-suv',year:2014,mileage:103186,cc:1990,eng:'FB20',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Other',loc:'',price:174000,bids:55,status:'ended',damage:'',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'-',trans_oil:'-',main_dmg:'Other Factor(s)',panels:{},airbags:{},rmk:''},
+  {stk:'b27f40710693e53e205a3f44ce075bb9',sno:'1388137',make:'SUBARU',model:'XV',grade:'2.0I-L EYESIGHT',body:'SUV',cat:'mid-suv',year:2014,mileage:103186,cc:1990,eng:'FB20',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Other',loc:'',price:174000,bids:55,status:'ended',damage:'',dc:'Rolling',engine_s:'Start',engine_s:'Start',radiator:'-',shift:'-',trans_oil:'-',main_dmg:'Other Factor(s)',panels:{},airbags:{},rmk:''},
   {stk:'4e6a81560b04f8142558fd6ac6148a8a',sno:'1384208',make:'TOYOTA',model:'NOAH',grade:'SI W×B II',body:'MV&1Box',cat:'mpv',year:2020,mileage:51017,cc:1986,eng:'3ZR',fuel:'Gasoline',tx:'AT',drv:'2WD',col:'Pearl',loc:'KASHIWA SC',price:1205000,bids:59,status:'ended',damage:'Front',dc:'Rolling',engine_s:'Start',radiator:'Bent',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',bonnet:'NG',l_headlight:'NG',r_headlight:'Scratch',l_fender:'NG',r_fender:'Dent',l_front_door:'Dent',r_front_door:'Scratch',l_rear_door:'Scratch',r_rear_door:'Scratch'},airbags:{pass:'Available',drv:'Available'},rmk:''},
   {stk:'e9483d89b1dea01b50a1f4bc06ce600b',sno:'1385868',make:'TOYOTA',model:'HIACE VAN',grade:'DX GL PACKAGE',body:'Cab Van',cat:'mpv',year:2015,mileage:168020,cc:2980,eng:'1KD',fuel:'Diesel',tx:'AT',drv:'2WD',col:'Silver',loc:'NAGOYA SC',price:null,bids:0,status:'ended',damage:'Left',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged,Electric Equipment',panels:{l_rear_fender:'NG',rear_bumper:'NG',front_bumper:'Dent',bonnet:'Dent',roof:'Dent',l_front_door:'Dent',r_front_door:'Dent',l_rear_door:'Dent',r_rear_door:'Dent'},airbags:{},rmk:'Outside auction — no public price.'},
   {stk:'77c3116fd82c1407fb56b64ef9c7af6e',sno:'1388259',make:'NISSAN',model:'X-TRAIL',grade:'20X EMERGENCY BRAKE PACKAGE',body:'SUV',cat:'mid-suv',year:2014,mileage:44220,cc:1990,eng:'MR20',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Black',loc:'NAGOYA SC',price:333000,bids:166,status:'ended',damage:'Front,Right',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',r_headlight:'NG',r_fender:'NG',r_front_door:'NG',l_fender:'Dent',front_glass:'Stone Chip'},airbags:{pass:'Available',drv:'Available'},rmk:'166 bidders — exceptional competition.'},
@@ -785,10 +850,10 @@ var ALL_DATA=[
   {stk:'5e6f7a8b',sno:'1391200',make:'TOYOTA',model:'AQUA',grade:'G',body:'Hatch',cat:'hatch',year:2022,mileage:22100,cc:1490,eng:'1NZ-FXE',fuel:'Hybrid',tx:'AT',drv:'2WD',col:'Silver',loc:'OSAKA SC',price:290000,bids:8,status:'ended',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',l_rear_fender:'Dent',r_rear_fender:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
   {stk:'3c4d5e6f',sno:'1392301',make:'HONDA',model:'N-BOX',grade:'L',body:'KeiCar',cat:'kei',year:2023,mileage:5400,cc:660,eng:'S07B',fuel:'Gasoline',tx:'AT',drv:'2WD',col:'White',loc:'NAGOYA SC',price:340000,bids:19,status:'active',damage:'Front',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',l_fender:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
   {stk:'d3e4f5a6',sno:'1390877',make:'SUBARU',model:'FORESTER',grade:'ADVANCE',body:'SUV',cat:'mid-suv',year:2021,mileage:42000,cc:1995,eng:'FB20',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Blue',loc:'SENDAI SC',price:890000,bids:12,status:'ended',damage:'Left',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{l_front_door:'NG',l_rear_door:'NG',l_fender:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
-  {stk:'7e8f9a0b',sno:'1392450',make:'SUZUKI',model:'JIMNY',grade:'XL',body:'KeiCar-RV',cat:'kei-suv',year:2024,mileage:3800,cc:650,eng:'R06A',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'White',loc:'SAPPORO SC',price:850000,bids:38,status:'active',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',trunk:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:'Active auction.'},
+  {stk:'7e8f9a0b',sno:'1392450',make:'SUZUKI',model:'JIMNY',grade:'XL',body:'KeiCar-RV',cat:'kei-suv',year:2024,mileage:3800,cc:650,eng:'R06A',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'White',loc:'SAPPORO SC',price:850000,bids:38,status:'active',auction_ends_at:'2026-05-31T14:00:00Z',listed_at:'2026-05-29T08:00:00Z',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',trunk:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:'Active auction.'},
   {stk:'b5c6d7e8',sno:'1391560',make:'HONDA',model:'VEZEL',grade:'HYBRID Z',body:'SUV',cat:'compact-suv',year:2022,mileage:11200,cc:1496,eng:'LEB',fuel:'Hybrid',tx:'AT',drv:'2WD',col:'Red',loc:'OSAKA SC',price:1200000,bids:14,status:'ended',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',l_rear_fender:'Dent',r_rear_fender:'Dent',trunk:'NG'},airbags:{pass:'Available',drv:'Available'},rmk:''},
-  {stk:'c3d4e5f6',sno:'1392190',make:'SUZUKI',model:'HUSTLER',grade:'HYBRID X',body:'KeiCar',cat:'kei',year:2024,mileage:2800,cc:660,eng:'R06D',fuel:'Mild-Hybrid',tx:'AT',drv:'2WD',col:'Yellow',loc:'KANAZAWA SC',price:410000,bids:12,status:'active',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',trunk:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
-  {stk:'03ccfba0',sno:'1392600',make:'TOYOTA',model:'RAIZE',grade:'Z',body:'SUV',cat:'compact-suv',year:2023,mileage:15600,cc:998,eng:'1KR-VET',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Blue',loc:'NAGOYA SC',price:800000,bids:7,status:'active',damage:'Front',dc:'Rolling',engine_s:'Start',radiator:'Dent',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',bonnet:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
+  {stk:'c3d4e5f6',sno:'1392190',make:'SUZUKI',model:'HUSTLER',grade:'HYBRID X',body:'KeiCar',cat:'kei',year:2024,mileage:2800,cc:660,eng:'R06D',fuel:'Mild-Hybrid',tx:'AT',drv:'2WD',col:'Yellow',loc:'KANAZAWA SC',price:410000,bids:12,status:'upcoming',listed_at:'2026-05-27T08:00:00Z',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',trunk:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
+  {stk:'03ccfba0',sno:'1392600',make:'TOYOTA',model:'RAIZE',grade:'Z',body:'SUV',cat:'compact-suv',year:2023,mileage:15600,cc:998,eng:'1KR-VET',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Blue',loc:'NAGOYA SC',price:800000,bids:7,status:'upcoming',listed_at:'2026-05-28T08:00:00Z',damage:'Front',dc:'Rolling',engine_s:'Start',radiator:'Dent',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',bonnet:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
   {stk:'ef56ab78',sno:'1388900',make:'NISSAN',model:'X-TRAIL',grade:'20Xi V SELECTION',body:'SUV',cat:'mid-suv',year:2021,mileage:105977,cc:1997,eng:'MR20DD',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'White',loc:'OSAKA SC',price:180000,bids:3,status:'ended',damage:'Front,Floor',dc:'Rolling',engine_s:'Start',radiator:'Broken',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',bonnet:'NG',l_headlight:'NG',r_headlight:'NG',front_glass:'Crack'},airbags:{pass:'Finished',drv:'Finished'},rmk:'Floor damage. Airbags deployed.'},
   {stk:'63a30ce5',sno:'1391120',make:'TOYOTA',model:'FJ CRUISER',grade:'GX',body:'SUV',cat:'mid-suv',year:2021,mileage:45200,cc:3956,eng:'1GR-FE',fuel:'Gasoline',tx:'AT',drv:'4WD',col:'Black',loc:'TOKYO SC',price:2700000,bids:44,status:'ended',damage:'Rear',dc:'Rolling',engine_s:'Start',radiator:'-',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{rear_bumper:'NG',trunk:'NG',r_rear_fender:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:'Popular tour operator spec.'},
   {stk:'1a2b3c4d',sno:'1392780',make:'TOYOTA',model:'SIENTA',grade:'HYBRID G',body:'MV&1Box',cat:'mpv',year:2023,mileage:8200,cc:1490,eng:'1NZ-FXE',fuel:'Hybrid',tx:'AT',drv:'2WD',col:'White',loc:'YOKOHAMA SC',price:560000,bids:13,status:'active',damage:'Front',dc:'Rolling',engine_s:'Start',radiator:'Dent',shift:'Movable',trans_oil:'-',main_dmg:'Damaged',panels:{front_bumper:'NG',bonnet:'Dent',l_headlight:'Dent'},airbags:{pass:'Available',drv:'Available'},rmk:''},
@@ -835,13 +900,14 @@ function goTab(name,btn){
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
   var t=document.getElementById('tab-'+name);if(t)t.classList.add('on');
   if(btn)btn.classList.add('on');
-  if(name==='dash')renderDash();
-  if(name==='live')renderLive();
-  if(name==='sold')renderSold();
-  if(name==='intel')renderIntel();
-  if(name==='models')renderModels();
+  if(name==='dash')     renderDash();
+  if(name==='live')     renderLive();
+  if(name==='upcoming') renderUpcoming();
+  if(name==='sold')     renderSold();
+  if(name==='intel')    renderIntel();
+  if(name==='models')   renderModels();
   if(name==='analytics')renderAnalytics();
-  if(name==='data')renderData();
+  if(name==='data')     renderData();
 }
 function showToast(msg,type){
   var t=document.getElementById('toast');t.textContent=msg;
@@ -853,44 +919,78 @@ function toggleSec(id){var e=document.getElementById(id);if(!e)return;e.style.di
 
 /* ─── LISTING PANEL ─── */
 function buildPanel(d,scope){
-  var s=buyScore(d),ke=getKeDemand(d.make,d.model);
-  var panels=d.panels||{};
-  var ng=Object.entries(panels).filter(function(kv){return kv[1]==='NG';});
-  var na=Object.entries(panels).filter(function(kv){return kv[1]==='NA';});
-  var minor=Object.entries(panels).filter(function(kv){return kv[1]!=='NG'&&kv[1]!=='NA'&&kv[1]!=='-';});
-  var pLabel=function(k){return k.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});};
+  var panels  = d.panels||{};
+  var ng      = Object.entries(panels).filter(function(kv){return kv[1]==='NG';});
+  var na      = Object.entries(panels).filter(function(kv){return kv[1]==='NA';});
+  var pLabel  = function(k){return k.replace(/_/g,' ').replace(/\b\w/g,function(c){return c.toUpperCase();});};
+  var eng     = (d.engine_s||'').trim();
+  var radBad  = d.radiator&&d.radiator!=='-'&&d.radiator.toLowerCase()!=='ok';
+  var oilBad  = d.trans_oil&&d.trans_oil.indexOf('NG')>-1;
+  var airbagDep = d.airbags&&(d.airbags.pass==='Finished'||d.airbags.drv==='Finished');
+  var statusBadge = d.status==='active'
+    ?'<span class="badge b-live">ACTIVE</span>'
+    :d.status==='upcoming'
+    ?'<span class="badge b-warn">UPCOMING</span>'
+    :'<span class="badge b-sold">SOLD</span>';
   var chips='<div class="chips">';
-  chips+='<span class="chip '+(d.dc==='Rolling'?'ok':'bad')+'">'+d.dc+'</span>';
-  chips+='<span class="chip '+(d.engine_s==='Start'?'ok':d.engine_s==='Does not start'?'bad':'')+'">Engine: '+esc(d.engine_s||'-')+'</span>';
-  if(d.radiator&&d.radiator!=='-')chips+='<span class="chip '+(d.radiator==='Broken'?'bad':'warn')+'">Radiator: '+esc(d.radiator)+'</span>';
-  if(d.trans_oil&&d.trans_oil.indexOf('NG')>-1)chips+='<span class="chip bad">Trans oil: NG</span>';
-  if(d.airbags&&(d.airbags.pass==='Finished'||d.airbags.drv==='Finished'))chips+='<span class="chip bad">⚠ Airbags deployed</span>';
+  chips+='<span class="chip '+(d.dc==='Rolling'?'ok':'bad')+'">'+esc(d.dc||'—')+'</span>';
+  // Engine — always show
+  var engChip=eng&&eng!=='-'?eng:'Unknown';
+  chips+='<span class="chip '+(engChip==='Start'?'ok':engChip.toLowerCase().indexOf('not')>-1?'bad':'')+'">Engine: '+esc(engChip)+'</span>';
+  if(radBad) chips+='<span class="chip '+(d.radiator==='Broken'?'bad':'warn')+'">Radiator: '+esc(d.radiator)+'</span>';
+  if(oilBad) chips+='<span class="chip bad">Trans oil: NG</span>';
+  if(airbagDep) chips+='<span class="chip bad">⚠ Airbags deployed</span>';
   chips+='</div>';
-  var ngHtml='',naHtml='',minorHtml='';
-  if(ng.length){ngHtml='<div class="pb-stitle">❌ NG Panels ('+ng.length+')</div><div class="dmg-grid">';ng.forEach(function(kv){ngHtml+='<div class="dmg-item ng"><div class="dmg-label">'+pLabel(kv[0])+'</div>NG</div>';});ngHtml+='</div>';}
-  if(na.length){naHtml='<div class="pb-stitle" style="margin-top:8px">⚠ NA / Missing ('+na.length+')</div><div class="dmg-grid">';na.forEach(function(kv){naHtml+='<div class="dmg-item na"><div class="dmg-label">'+pLabel(kv[0])+'</div>NA</div>';});naHtml+='</div>';}
-  if(minor.length&&ng.length===0){minorHtml='<div class="pb-stitle">Minor Damage</div><div style="font-size:11.5px;color:var(--ink3)">'+minor.map(function(kv){return pLabel(kv[0])+': '+kv[1];}).join(' &middot; ')+'</div>';}
-  var yr=d.year?String(d.year):'?';
-  return '<div class="ph"><div class="ph-title">'+esc(d.make)+' '+esc(d.model)+' '+esc(d.grade)+'</div><div class="ph-sub">No.'+esc(d.sno)+' &middot; '+yr+' &middot; '+(d.mileage?Number(d.mileage).toLocaleString()+'km':'?km')+'</div></div>'
-    +'<div class="pb"><div style="display:flex;align-items:center;gap:8px;margin-bottom:12px"><span class="score '+scoreCls(s)+'">'+s+'</span><span class="dem '+KE_DMG_CLS[ke]+'" style="font-size:11px">KE Demand: '+ke+'</span>'+(d.status==='active'?'<span class="badge b-live">LIVE</span>':'<span class="badge b-sold">SOLD</span>')+'</div>'
-    +chips
-    +(ng.length||na.length||minor.length?'<div class="pb-sec">'+ngHtml+naHtml+minorHtml+'</div>':'')
-    +'<div class="pb-sec"><div class="pb-stitle">Specs</div>'
-    +'<div class="spec-row"><span class="spec-k">Price</span><div style="text-align:right"><div class="mono bold">'+(d.price?fJ(d.price):'No public price')+'</div>'+(d.price?'<div style="font-size:11px;color:var(--ink3)">$'+Math.round(d.price*RATES.jpu).toLocaleString()+' &middot; KES '+Math.round(d.price*RATES.jpu*RATES.usdKes).toLocaleString()+'</div>':'')+'</div></div>'
-    +'<div class="spec-row"><span class="spec-k">Bids</span><span class="spec-v bold">'+d.bids+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Damage</span><span class="spec-v">'+(d.damage||'Unknown')+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Drive</span><span class="spec-v">'+esc(d.drv||'-')+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Engine</span><span class="spec-v mono">'+esc(d.eng||'-')+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Fuel</span><span class="spec-v">'+esc(d.fuel||'-')+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Trans</span><span class="spec-v">'+esc(d.tx||'-')+'</span></div>'
-    +'<div class="spec-row"><span class="spec-k">Location</span><span class="spec-v">'+esc(d.loc||'-')+'</span></div>'
-    +(d.rmk?'<div class="spec-row"><span class="spec-k">Notes</span><span class="spec-v" style="color:var(--am)">'+esc(d.rmk)+'</span></div>':'')
+  var ngHtml='';
+  if(ng.length){
+    ngHtml='<div class="pb-stitle">❌ NG Panels ('+ng.length+')</div><div class="dmg-grid">';
+    ng.forEach(function(kv){ngHtml+='<div class="dmg-item ng"><div class="dmg-label">'+pLabel(kv[0])+'</div>NG</div>';});
+    ngHtml+='</div>';
+  }
+  var naHtml='';
+  if(na.length){
+    naHtml='<div class="pb-stitle" style="margin-top:8px">⚠ NA / Missing</div><div class="dmg-grid">';
+    na.forEach(function(kv){naHtml+='<div class="dmg-item na"><div class="dmg-label">'+pLabel(kv[0])+'</div>NA</div>';});
+    naHtml+='</div>';
+  }
+  var usdLine=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString()+' · KES '+Math.round(d.price*RATES.jpu*RATES.usdKes/1000).toFixed(0)+'K':'';
+  var endLine='';
+  if(d.status==='active'&&d.auction_ends_at){
+    var msLeft=new Date(d.auction_ends_at)-new Date();
+    if(msLeft>0){
+      var daysLeft=Math.floor(msLeft/864e5);
+      var hoursLeft=Math.floor((msLeft%864e5)/36e5);
+      endLine='<div style="font-size:11px;color:var(--peach);margin-bottom:6px">⏱ Ends in '+daysLeft+'d '+hoursLeft+'h</div>';
+    }
+  }
+  if(d.status==='ended'&&d.ended_at){
+    endLine='<div style="font-size:11px;color:var(--ink3);margin-bottom:6px">Ended '+new Date(d.ended_at).toLocaleDateString()+'</div>';
+  }
+  return '<div class="ph">'
+    +'<div class="ph-title">'+esc(d.make)+' '+esc(d.model)+'</div>'
+    +'<div class="ph-sub" style="color:var(--ink3);font-size:11.5px">'+esc(d.grade||'')+'</div>'
+    +'<div class="ph-sub">No.'+esc(d.sno||'')+(d.year?' · '+d.year:'')+(d.mileage?' · '+Number(d.mileage).toLocaleString()+'km':'')+'</div>'
     +'</div>'
+    +'<div class="pb">'
+    +endLine
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">'+statusBadge+'</div>'
+    +chips
+    +(ngHtml||naHtml?'<div class="pb-sec">'+ngHtml+naHtml+'</div>':'')
+    +'<div class="pb-sec"><div class="pb-stitle">Specs</div>'
+    +'<div class="spec-row"><span class="spec-k">Price</span><div style="text-align:right"><div class="mono bold">'+(d.price?fJ(d.price):'No public price')+'</div>'+(usdLine?'<div style="font-size:11px;color:var(--ink3)">'+usdLine+'</div>':'')+'</div></div>'
+    +'<div class="spec-row"><span class="spec-k">Bids</span><span class="spec-v bold">'+d.bids+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Damage</span><span class="spec-v">'+(d.damage||'—')+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Drive</span><span class="spec-v">'+esc(d.drv||'—')+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Engine</span><span class="spec-v mono">'+esc(d.eng||'—')+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Fuel</span><span class="spec-v">'+esc(d.fuel||'—')+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Trans</span><span class="spec-v">'+esc(d.tx||'—')+'</span></div>'
+    +'<div class="spec-row"><span class="spec-k">Location</span><span class="spec-v">'+esc(d.loc||'—')+'</span></div>'
+    +'</div>'
+    +(d.rmk?'<div class="pb-sec"><div class="pb-stitle">Remarks</div><div style="font-size:12px;color:var(--am);line-height:1.55;padding:6px 0">'+esc(d.rmk)+'</div></div>':'')
     +'<div class="pan-actions">'
     +'<button class="btn bp bsm" onclick="addToBatch(\''+d.stk+'\')">📦 Run Deal Calc</button>'
     +'<a class="btn bg bsm" href="https://www.tau-trade.com/sal_frt/stock/detail?stkNo='+d.stk+'" target="_blank">↗ Open TAU</a>'
-    +'</div>'
-    +'</div>';
+    +'</div></div>';
 }
 function showPanel(stk,scope){
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
@@ -912,58 +1012,84 @@ function addToBatch(stk){
 
 /* ─── TABLE ROW ─── */
 function tRow(d,scope){
-  var s=buyScore(d),ke=getKeDemand(d.make,d.model);
-  var yr=d.year||'—';
-  var km=d.mileage?Number(d.mileage).toLocaleString()+'km':'—';
-  var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
+  var yr  = d.year||'—';
+  var km  = d.mileage?Number(d.mileage).toLocaleString()+'km':'—';
+  var usd = d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
+  var eng = (d.engine_s||'').trim();
+  var engCls = eng==='Start'?'color:var(--g)':eng&&eng!=='-'&&eng.toLowerCase().indexOf('not')>-1?'color:var(--rd)':'color:var(--ink3)';
+  var engLbl = eng&&eng!=='-'?eng:'—';
+  var dcLine = [d.dc||'',d.drv||'',d.fuel||''].filter(Boolean).join(' · ');
   return '<tr class="trow" data-stk="'+d.stk+'" onclick="showPanel(\''+d.stk+'\',\''+scope+'\')">'
     +'<td class="mono" style="font-size:11px;color:var(--ink3)">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
-    +'<td><div class="bold">'+esc(d.make)+' '+esc(d.model)+'</div><div style="font-size:11px;color:var(--ink3)">'+esc(d.grade||'')+'</div></td>'
-    +'<td class="mono"><div>'+yr+'</div><div style="font-size:11px;color:var(--ink3)">'+km+'</div></td>'
+    +'<td><div class="bold">'+esc(d.make)+' '+esc(d.model)+'</div></td>'
+    +'<td style="font-size:11.5px;color:var(--ink2);max-width:160px;white-space:normal;line-height:1.35">'+esc(d.grade||'—')+'</td>'
+    +'<td class="mono">'+yr+'</td>'
+    +'<td class="mono">'+km+'</td>'
     +'<td style="font-size:12px">'+(d.damage||'—')+'</td>'
-    +'<td><div><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'">'+d.dc+'</span></div>'
-    +'<div style="font-size:10px;color:var(--ink3);margin-top:2px">'+(d.drv||'')+(d.fuel?' &middot; '+d.fuel:'')+'</div></td>'
+    +'<td style="font-size:12px;'+engCls+'">'+esc(engLbl)+'</td>'
+    +'<td style="font-size:11px;color:var(--ink3)">'+esc(dcLine)+'</td>'
     +'<td><div class="mono bold">'+(d.price?fJ(d.price):'<span style="color:var(--ink4)">—</span>')+'</div>'
     +(usd?'<div style="font-size:11px;color:var(--bl);font-family:\'DM Mono\',monospace">'+usd+'</div>':'')+'</td>'
     +'<td class="mono bold" style="color:'+( d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink2)')+'">'+d.bids+'</td>'
-    +'<td><span class="score '+scoreCls(s)+'">'+s+'</span></td>'
-    +'<td><span class="dem '+KE_DMG_CLS[ke]+'">'+ke+'</span></td>'
     +'<td onclick="event.stopPropagation()"><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button></td>'
     +'</tr>';
 }
 
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
-  var q=(gv(prefix+'-q')||'').toLowerCase();
-  var mk=gv(prefix+'-make')||'',mdl=gv(prefix+'-model')||'',bd=gv(prefix+'-body')||'';
-  var dc=gv(prefix+'-dc')||'',dmg=gv(prefix+'-dmg')||'',fuel=gv(prefix+'-fuel')||'';
-  var drv=gv(prefix+'-drv')||'';
-  var yrfrom=parseInt(gv(prefix+'-yearfrom'))||0,yrto=parseInt(gv(prefix+'-yearto'))||0;
-  var maxkm=parseInt(gv(prefix+'-maxkm'))||0;
-  var minscore=parseInt(gv(prefix+'-minscore'))||0;
-  var minp=parseInt(gv(prefix+'-minprice'))||0,maxp=parseInt(gv(prefix+'-maxprice'))||0;
-  var fst=status||gv(prefix+'-status')||'';
+  var q       = (gv(prefix+'-q')||'').toLowerCase();
+  var mk      = gv(prefix+'-make')||'';
+  var mdl     = gv(prefix+'-model')||'';
+  var bd      = gv(prefix+'-body')||'';
+  var dc      = gv(prefix+'-dc')||'';
+  var dmg     = gv(prefix+'-dmg')||'';
+  var fuel    = gv(prefix+'-fuel')||'';
+  var drv     = gv(prefix+'-drv')||'';
+  var engine  = gv(prefix+'-engine')||'';
+  var yrfrom  = parseInt(gv(prefix+'-yearfrom'))||0;
+  var yrto    = parseInt(gv(prefix+'-yearto'))||0;
+  var maxkm   = parseInt(gv(prefix+'-maxkm'))||0;
+  var minp    = parseInt(gv(prefix+'-minprice'))||0;
+  var maxp    = parseInt(gv(prefix+'-maxprice'))||0;
+  var dateRng = parseInt(gv(prefix+'-daterange'))||0;
+  var fst     = status||gv(prefix+'-status')||'';
+
+  var cutoff  = null;
+  if(dateRng){
+    cutoff = new Date();
+    cutoff.setDate(cutoff.getDate()-dateRng);
+  }
+
   return ALL_DATA.filter(function(d){
-    if(fst&&d.status!==fst)return false;
-    if(mk&&d.make!==mk)return false;
-    if(mdl&&d.model!==mdl)return false;
-    if(bd&&d.body!==bd)return false;
-    if(dc&&d.dc!==dc)return false;
-    if(dmg&&(d.damage||'').toLowerCase().indexOf(dmg.toLowerCase())===-1)return false;
-    if(fuel&&d.fuel!==fuel)return false;
-    if(drv&&d.drv!==drv)return false;
-    if(yrfrom&&d.year&&d.year<yrfrom)return false;
-    if(yrto&&d.year&&d.year>yrto)return false;
-    if(maxkm&&d.mileage&&d.mileage>maxkm)return false;
-    if(minscore&&buyScore(d)<minscore)return false;
-    if(minp&&d.price&&d.price<minp)return false;
-    if(maxp&&d.price&&d.price>maxp)return false;
-    if(q&&(d.make+' '+d.model+' '+d.grade+' '+(d.damage||'')+' '+(d.fuel||'')+' '+(d.drv||'')).toLowerCase().indexOf(q)===-1)return false;
+    if(fst&&d.status!==fst) return false;
+    if(mk&&d.make!==mk)    return false;
+    if(mdl&&d.model!==mdl) return false;
+    if(bd&&d.body!==bd)    return false;
+    if(dc&&d.dc!==dc)      return false;
+    if(dmg&&(d.damage||'').toLowerCase().indexOf(dmg.toLowerCase())===-1) return false;
+    if(fuel&&d.fuel!==fuel) return false;
+    if(drv&&d.drv!==drv)   return false;
+    if(engine){
+      var es=(d.engine_s||'').toLowerCase();
+      if(engine==='Start'&&es!=='start') return false;
+      if(engine==='Does not start'&&es.indexOf('not')===-1&&es.indexOf('does')===-1) return false;
+    }
+    if(yrfrom&&d.year&&d.year<yrfrom) return false;
+    if(yrto&&d.year&&d.year>yrto)     return false;
+    if(maxkm&&d.mileage&&d.mileage>maxkm) return false;
+    if(minp&&d.price&&d.price<minp)   return false;
+    if(maxp&&d.price&&d.price>maxp)   return false;
+    if(cutoff){
+      var dateField = (fst==='ended'||prefix==='sold')?'ended_at':'listed_at';
+      var dt = d[dateField]?new Date(d[dateField]):null;
+      if(!dt||dt<cutoff) return false;
+    }
+    if(q&&(d.make+' '+d.model+' '+d.grade+' '+(d.damage||'')+' '+(d.fuel||'')+' '+(d.drv||'')).toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
 }
 function clearFilters(prefix){
-  ['q','make','model','body','dc','dmg','fuel','drv','yearfrom','yearto','maxkm','minscore','minprice','maxprice','sort','status'].forEach(function(k){
+  ['q','make','model','body','dc','dmg','fuel','drv','engine','yearfrom','yearto','maxkm','minscore','minprice','maxprice','sort','status','daterange'].forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(!e)return;
     if(e.tagName==='SELECT')e.value='';else e.value='';
@@ -973,32 +1099,65 @@ function clearFilters(prefix){
   else if(prefix==='data'||prefix==='dt')renderData();
   else if(prefix==='an'){renderAnalytics();}
   else if(prefix==='intel')renderIntel();
+  else if(prefix==='upc')renderUpcoming();
 }
 function sortRows(rows,srt){
   return rows.slice().sort(function(a,b){
-    if(srt==='price_asc')return(a.price||0)-(b.price||0);
-    if(srt==='price_desc')return(b.price||0)-(a.price||0);
-    if(srt==='score')return buyScore(b)-buyScore(a);
-    if(srt==='mileage')return(a.mileage||0)-(b.mileage||0);
-    if(srt==='year_desc')return(b.year||0)-(a.year||0);
+    if(srt==='price_asc')    return(a.price||0)-(b.price||0);
+    if(srt==='price_desc')   return(b.price||0)-(a.price||0);
+    if(srt==='mileage')      return(a.mileage||0)-(b.mileage||0);
+    if(srt==='year_desc')    return(b.year||0)-(a.year||0);
+    if(srt==='ends_asc'){
+      var ea=a.auction_ends_at?new Date(a.auction_ends_at).getTime():9e15;
+      var eb=b.auction_ends_at?new Date(b.auction_ends_at).getTime():9e15;
+      return ea-eb;
+    }
+    if(srt==='ended_desc'){
+      var ea2=a.ended_at?new Date(a.ended_at).getTime():0;
+      var eb2=b.ended_at?new Date(b.ended_at).getTime():0;
+      return eb2-ea2;
+    }
+    if(srt==='ended_asc'){
+      var ea3=a.ended_at?new Date(a.ended_at).getTime():9e15;
+      var eb3=b.ended_at?new Date(b.ended_at).getTime():9e15;
+      return ea3-eb3;
+    }
+    if(srt==='listed_desc'){
+      var la=a.listed_at?new Date(a.listed_at).getTime():0;
+      var lb=b.listed_at?new Date(b.listed_at).getTime():0;
+      return lb-la;
+    }
     return(b.bids||0)-(a.bids||0);
   });
 }
 /* ─── LIVE AUCTIONS ─── */
 function renderLive(){
-  var rows=sortRows(filterRows('active','live'),gv('live-sort'));
-  var tb=document.getElementById('live-tbody');
-  var cols=10;
-  if(tb)tb.innerHTML=rows.length?rows.map(function(d){return tRow(d,'live');}).join(''):'<tr><td colspan="'+cols+'" style="text-align:center;padding:24px;color:var(--ink4)">No live auctions match filters</td></tr>';
+  var srt  = gv('live-sort')||'ends_asc';
+  var rows = sortRows(filterRows('active','live'),srt);
+  var tb   = document.getElementById('live-tbody');
+  if(tb) tb.innerHTML=rows.length
+    ?rows.map(function(d){return tRow(d,'live');}).join('')
+    :'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--ink4)">No active auctions match — listings appear here once the scraper runs and finds auctions with active countdowns</td></tr>';
   setTxt('live-count',rows.length+' listing'+(rows.length!==1?'s':''));
 }
 
+function renderUpcoming(){
+  var srt  = gv('upc-sort')||'listed_desc';
+  var rows = sortRows(filterRows('upcoming','upc'),srt);
+  var tb   = document.getElementById('upc-tbody');
+  if(tb) tb.innerHTML=rows.length
+    ?rows.map(function(d){return tRow(d,'upc');}).join('')
+    :'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--ink4)">No upcoming listings — TAU &ldquo;on sale soon&rdquo; items appear here once the scraper runs</td></tr>';
+  setTxt('upc-count',rows.length+' upcoming listing'+(rows.length!==1?'s':''));
+}
 /* ─── SOLD ARCHIVE ─── */
 function renderSold(){
-  var rows=sortRows(filterRows('ended','sold'),gv('sold-sort'));
-  var tb=document.getElementById('sold-tbody');
-  var cols=10;
-  if(tb)tb.innerHTML=rows.length?rows.map(function(d){return tRow(d,'sold');}).join(''):'<tr><td colspan="'+cols+'" style="text-align:center;padding:24px;color:var(--ink4)">No sold listings match filters</td></tr>';
+  var srt  = gv('sold-sort')||'ended_desc';
+  var rows = sortRows(filterRows('ended','sold'),srt);
+  var tb   = document.getElementById('sold-tbody');
+  if(tb) tb.innerHTML=rows.length
+    ?rows.map(function(d){return tRow(d,'sold');}).join('')
+    :'<tr><td colspan="11" style="text-align:center;padding:24px;color:var(--ink4)">No sold listings match filters</td></tr>';
   setTxt('sold-count',rows.length+' sold listing'+(rows.length!==1?'s':''));
 }
 
@@ -1206,35 +1365,35 @@ function renderAnalytics(){
 }
 
 /* ─── DATA TAB ─── */
-function renderData(){
-  var rows=filterRows('','dt');
-  var srt=gv('dt-sort')||'bids';
-  rows=sortRows(rows,srt);
-  setTxt('data-count',rows.length+' of '+ALL_DATA.length+' listings');
-  var tb=document.getElementById('data-tbody');
-  if(!tb)return;
-  tb.innerHTML=rows.length?rows.map(function(d){
-    var s=buyScore(d);
-    var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
-    var kes=d.price?'KES '+Math.round(d.price*RATES.jpu*RATES.usdKes/1000).toFixed(0)+'K':'';
-    return '<tr><td class="mono" style="font-size:11px">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
-      +'<td><span class="badge '+(d.status==='active'?'b-live':'b-sold')+'">'+(d.status==='active'?'LIVE':'SOLD')+'</span></td>'
+  var rows = filterRows('','dt');
+  var srt  = gv('dt-sort')||'bids';
+  rows     = sortRows(rows,srt);
+  function renderData(){
+setTxt('data-count',rows.length+' of '+ALL_DATA.length+' listings');
+  var tb   = document.getElementById('data-tbody');
+  if(!tb) return;
+  tb.innerHTML = rows.length ? rows.map(function(d){
+    var usd = d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
+    var eng = (d.engine_s||'').trim()||'—';
+    return '<tr>'
+      +'<td class="mono" style="font-size:11px">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
+      +'<td><span class="badge '+(d.status==='active'?'b-live':d.status==='upcoming'?'b-warn':'b-sold')+'">'+(d.status==='active'?'ACTIVE':d.status==='upcoming'?'SOON':'SOLD')+'</span></td>'
       +'<td class="bold">'+esc(d.make)+'</td>'
       +'<td class="bold">'+esc(d.model)+'</td>'
-      +'<td style="font-size:11.5px">'+esc(d.grade||'')+'</td>'
+      +'<td style="font-size:11px;color:var(--ink2)">'+esc(d.grade||'')+'</td>'
       +'<td class="mono">'+(d.year||'—')+'</td>'
       +'<td class="mono">'+(d.mileage?d.mileage.toLocaleString():'—')+'</td>'
       +'<td style="font-size:11.5px">'+esc(d.body||'')+'</td>'
+      +'<td style="font-size:12px">'+esc(eng)+'</td>'
       +'<td style="font-size:11.5px">'+esc(d.fuel||'')+'</td>'
       +'<td style="font-size:11.5px">'+esc(d.drv||'')+'</td>'
       +'<td style="font-size:11.5px">'+(d.damage||'—')+'</td>'
       +'<td><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'">'+d.dc+'</span></td>'
-      +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:10.5px;color:var(--ink3)">'+usd+' / '+kes+'</div>':'')+'</td>'
+      +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:10.5px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
       +'<td class="mono">'+d.bids+'</td>'
-      +'<td><span class="score '+scoreCls(s)+'">'+s+'</span></td>'
-      +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')\">+ Batch</button></td>'
+      +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button></td>'
       +'</tr>';
-  }).join(''):('<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--ink4)">No listings match — <a href="#" onclick="clearFilters(\'dt\');return false" style="color:var(--peach)">clear filters</a></td></tr>');
+  }).join('') : '<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--ink4)">No listings match</td></tr>';
 }
 function exportCSV(){
   var cols=['stk','sno','status','make','model','grade','year','mileage','body','fuel','cc','drv','tx','damage','dc','price','bids'];
@@ -1248,7 +1407,7 @@ function syncModelFilter(prefix){populateModelFilter(prefix+'-make',prefix+'-mod
 function populateMakeFilters(){
   var makes=[...new Set(ALL_DATA.map(function(d){return d.make;}))].sort();
   var years=[...new Set(ALL_DATA.map(function(d){return d.year;}).filter(Boolean))].sort(function(a,b){return b-a;});
-  ['live-make','sold-make','ap-make','mod-make','data-make','dt-make','an-make','intel-make'].forEach(function(id){
+  ['live-make','sold-make','upc-make','ap-make','mod-make','data-make','dt-make','an-make','intel-make'].forEach(function(id){
     var sel=document.getElementById(id);
     if(!sel)return;
     makes.forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
@@ -1744,7 +1903,7 @@ function init(){
     document.getElementById('shared-labour').value=gv('def-labour')||8000;
     buildFreightRoutes();buildPartsRef();updateDutyEff();updateRates();
     updateSetupSummary();updateCpRatesPill();
-    renderDash();renderLive();renderSold();renderAnalytics();renderIntel();
+    renderDash();renderLive();renderUpcoming();renderSold();renderAnalytics();renderIntel();
     renderPanel();
     var rp=document.getElementById('rate-pill');
     if(rp)rp.textContent='\u00a51 = KES '+(RATES.jpu*RATES.usdKes).toFixed(4);
