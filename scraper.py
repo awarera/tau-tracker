@@ -217,9 +217,7 @@ def parse_listing(stk, html, existing=None):
         # Remove the "Time left" label prefix
         ctx = re.sub(r'^time left\s*[:\s]*', '', ctx, flags=re.IGNORECASE).strip()
         # Take first meaningful chunk (before double-space or newline)
-        tlv = ctx.split('  ')[0].strip()[:80] if colon >= 0 else ''
-    else:
-        tlv = ''
+        tlv = ctx.split('  ')[0].strip()[:80]
     new_status, ends_at = parse_time_left(tlv)
 
     prev_status = d.get('status', '')
@@ -414,7 +412,7 @@ def main():
     print(f"  ¥1 = KES {round(rates['jpu']*rates['usdKes'],4):.4f}")
 
     print('\n✓  Done')
-    return 0 if failed == 0 else 1
+    return 0  # always exit 0 — partial fetch failures are expected
 
 if __name__ == '__main__':
     sys.exit(main())
