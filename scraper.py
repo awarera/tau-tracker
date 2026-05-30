@@ -161,15 +161,23 @@ def load_seed():
 
 # ── Parse TAU detail page ──────────────────────────────────────────────────────
 def tv(html, *labels):
-    """Extract first matching table cell by header label(s)."""
+    """Extract table cell value. Handles icons/images after label text (TAU uses ? icons)."""
     for label in labels:
+        esc = re.escape(label)
         for pat in [
-            rf'<th[^>]*>\s*{re.escape(label)}\s*</th>\s*<td[^>]*>(.*?)</td>',
-            rf'<td[^>]*>\s*{re.escape(label)}\s*</td>\s*<td[^>]*>(.*?)</td>',
+            # th with possible trailing icon image before </th>
+            rf'<th[^>]*>[^<]*{esc}.*?</th>\s*<td[^>]*>(.*?)</td>',
+            # td label cell
+            rf'<td[^>]*>[^<]*{esc}.*?</td>\s*<td[^>]*>(.*?)</td>',
         ]:
             m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
             if m:
-                return re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
+                val = re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
+                val = re.sub(r'\s+', ' ', val).strip()
+                if val and val != '-':
+                    return val
+                elif val == '-':
+                    return '-'
     return ''
 
 def parse_listing(stk, html, existing=None):
@@ -186,19 +194,32 @@ def parse_listing(stk, html, existing=None):
     if 'listed_at' not in d:
         d['listed_at'] = now_iso
 
-    # ── Price — anchor to "Current Price:" to avoid false matches ─────────────
-    pm = re.search(r'Current\s*Price[^<]*?([\d,]+)\s*Yen', html, re.IGNORECASE)
-    if not pm:
-        pm = re.search(r'([\d,]+)\s*Yen', html)
-    d['price'] = int(pm.group(1).replace(',', '')) if pm else None
+    # ── Price — use DOTALL so .* crosses HTML tags (e.g. </strong>) ───────────
+    pm = re.search(r'Current\s*Price.*?([\d,]+)\s*Yen', html, re.IGNORECASE | re.DOTALL)
+    if pm:
+        d['price'] = int(pm.group(1).replace(',', ''))
+    else:
+        # Fallback: first standalone price number before "(USD"
+        pm2 = re.search(r'([\d,]{3,})\s*Yen.*?\(USD', html, re.IGNORECASE | re.DOTALL)
+        d['price'] = int(pm2.group(1).replace(',','')) if pm2 else None
 
     # ── Bid count ──────────────────────────────────────────────────────────────
-    bm = re.search(r'No\.\s*of\s*Bidder[^\d]*(\d+)', html, re.IGNORECASE)
+    bm = re.search(r'(?:No\.?\s*of\s*Bidder|Bidder\s*Count|No\.Bidder)[^\d]*(\d+)', html, re.IGNORECASE)
     d['bids'] = int(bm.group(1)) if bm else 0
 
-    # ── Status + auction end time ──────────────────────────────────────────────
-    tl  = re.search(r'Time\s*left\b[^<]*?(?:</[^>]+>)?\s*([^<\n]+)', html, re.IGNORECASE)
-    tlv = tl.group(1).strip() if tl else ''
+    # ── Status + auction end time ─────────────────────────────────────────────
+    # Robust time-left: strip all tags from context, isolate value
+    tl_idx = html.lower().find('time left')
+    tlv = ''
+    if tl_idx >= 0:
+        ctx = re.sub(r'<[^>]+>', ' ', html[tl_idx:tl_idx+300])
+        ctx = re.sub(r'\s+', ' ', ctx).strip()
+        # Remove the "Time left" label prefix
+        ctx = re.sub(r'^time left\s*[:\s]*', '', ctx, flags=re.IGNORECASE).strip()
+        # Take first meaningful chunk (before double-space or newline)
+        tlv = ctx.split('  ')[0].strip()[:80] if colon >= 0 else ''
+    else:
+        tlv = ''
     new_status, ends_at = parse_time_left(tlv)
 
     prev_status = d.get('status', '')
