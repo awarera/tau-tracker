@@ -3,15 +3,16 @@
 TAU Tracker — Daily Scraper
 Runs via GitHub Actions daily at 08:00 Nairobi (EAT).
 
-Three listing statuses:
-  active   — auction countdown running, bidding open now
-  upcoming — on sale soon, no active bidding yet
+Statuses:
+  active   — auction countdown running, bidding open
+  upcoming — on sale soon, no bidding yet
   ended    — auction completed
 
-Outputs:
-  data/listings.json        full dataset
-  data/rates.json           today's exchange rates
-  data/rates_history.json   rolling 30-day rate log
+price_source field:
+  extracted       — found via label + largest-Yen heuristic (reliable)
+  fallback        — found via Yen+USD pattern (less reliable)
+  re-checked      — re-validated post-fix (no extractable price found)
+  none            — no price found at all
 """
 
 import json, re, os, sys, time
@@ -19,10 +20,11 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-DISCOVER_PAGES   = 15    # pages per run after initial (10 items/page)
-INITIAL_PAGES    = 80    # first-ever run — deeper crawl to build dataset
-REQUEST_DELAY    = 1.5   # seconds between detail fetches
-MAX_RECHECK      = 60    # max active/upcoming listings to re-check per run
+DISCOVER_PAGES   = 15     # pages per daily run (10 items/page)
+INITIAL_PAGES    = 80     # first-ever run — deeper crawl
+REQUEST_DELAY    = 1.5    # seconds between fetches
+MAX_RECHECK      = 150    # active + upcoming re-checks per run (was 60)
+MAX_REVALIDATE   = 150    # ended listings with unverified prices to re-validate per run
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT          = os.path.dirname(os.path.abspath(__file__))
@@ -40,7 +42,7 @@ HEADERS = {
     'Accept-Language': 'en-US,en;q=0.9',
 }
 
-# ── HTTP helpers ───────────────────────────────────────────────────────────────
+# ── HTTP ───────────────────────────────────────────────────────────────────────
 def fetch_html(url, timeout=30):
     try:
         req = urllib.request.Request(url, headers=HEADERS)
@@ -53,8 +55,7 @@ def fetch_html(url, timeout=30):
 def fetch_json(url, timeout=10):
     try:
         req = urllib.request.Request(url, headers={
-            'Accept': 'application/json',
-            'User-Agent': HEADERS['User-Agent']
+            'Accept': 'application/json', 'User-Agent': HEADERS['User-Agent']
         })
         with urllib.request.urlopen(req, timeout=timeout) as r:
             return json.loads(r.read())
@@ -66,181 +67,148 @@ def fetch_json(url, timeout=10):
 def load_json(path, default):
     if os.path.exists(path):
         try:
-            with open(path) as f:
-                return json.load(f)
-        except Exception:
-            pass
+            with open(path) as f: return json.load(f)
+        except Exception: pass
     return default
 
 def save_json(path, data):
     with open(path, 'w') as f:
         json.dump(data, f, indent=2, ensure_ascii=False)
 
+def fJ(n):
+    return f'¥{n:,}' if n else '—'
+
+# ── Price extraction ───────────────────────────────────────────────────────────
+def extract_price(html):
+    """
+    Reliably extract the bid/sale price from a TAU listing page.
+
+    Strategy:
+      1. Find a price label in the HTML
+      2. Strip all HTML tags from the next 200 chars
+      3. Collect ALL Yen amounts in that window
+      4. Take the LARGEST value — main prices always dwarf fees/charges
+      5. Try up to 3 occurrences of the label (handles nav/footer noise)
+
+    Returns (price: int|None, source: str)
+    """
+    labels = ['current price', 'suggested price', 'goods price', 'offer price']
+
+    for label in labels:
+        start = 0
+        for _ in range(3):  # try up to 3 occurrences of this label
+            idx = html.lower().find(label, start)
+            if idx < 0:
+                break
+            chunk = re.sub(r'<[^>]+>', ' ', html[idx:idx + 200])
+            chunk = re.sub(r'\s+', ' ', chunk).strip()
+            matches = re.findall(r'([\d,]{3,})\s*Yen', chunk, re.IGNORECASE)
+            if matches:
+                values = [int(m.replace(',', '')) for m in matches if int(m.replace(',', '')) >= 1000]
+                if values:
+                    return max(values), 'extracted'
+            start = idx + 1
+
+    # Fallback: any price with USD notation (fees rarely show USD)
+    m = re.search(r'([\d,]{3,})\s*Yen[^)]{0,30}\(USD[\d,]+\)', html, re.IGNORECASE)
+    if m:
+        val = int(m.group(1).replace(',', ''))
+        if val >= 1000:
+            return val, 'fallback'
+
+    return None, 'none'
+
 # ── Time-left parser ───────────────────────────────────────────────────────────
-def parse_time_left(tlv):
+def parse_time_left(html):
     """
-    Parse TAU time-remaining strings into (status, auction_ends_at ISO | None).
-    Examples:
-      '1day+ 06:35:01'              → active, ~1.27 days from now
-      '2 day 09:05 until the end'   → active, ~2.38 days from now
-      'On sale soon'                → upcoming, None
-      'End'  /  ''                  → ended, None
+    Returns (status, auction_ends_at_iso | None)
+    active   = countdown found (digits + day/hr/colon pattern)
+    upcoming = 'on sale soon' / 'not decided'
+    ended    = 'End' / empty / no time pattern
     """
-    s = (tlv or '').strip().lower()
+    tl_idx = html.lower().find('time left')
+    tlv = ''
+    if tl_idx >= 0:
+        ctx = re.sub(r'<[^>]+>', ' ', html[tl_idx:tl_idx + 300])
+        ctx = re.sub(r'\s+', ' ', ctx).strip()
+        ctx = re.sub(r'^time left\s*[:\s]*', '', ctx, flags=re.IGNORECASE).strip()
+        tlv = ctx.split('  ')[0].strip()[:80]
+
+    s = tlv.lower()
     now = datetime.now(timezone.utc)
 
-    if not s or s == 'end' or s == 'ended':
+    if not s or s in ('end', 'ended', '-'):
         return 'ended', None
-
     if 'soon' in s or 'not decided' in s or 'sale soon' in s:
         return 'upcoming', None
 
-    # Look for digit-based countdown
-    if re.search(r'\d', s):
+    if re.search(r'\d+\s*(day|hr|:)', s, re.IGNORECASE):
         try:
-            days = hours = mins = secs = 0
+            days = hours = mins = 0
             dm = re.search(r'(\d+)\s*day', s)
-            hm = re.search(r'(\d+):(\d+):(\d+)', s)  # hh:mm:ss
-            hm2 = re.search(r'(\d+):(\d+)(?!\d)', s)  # hh:mm only
+            hm = re.search(r'(\d+):(\d+):(\d+)', s)
+            hm2 = re.search(r'(\d+):(\d+)(?!\d)', s)
             if dm:  days  = int(dm.group(1))
-            if hm:  hours, mins, secs = int(hm.group(1)), int(hm.group(2)), int(hm.group(3))
+            if hm:  hours, mins = int(hm.group(1)), int(hm.group(2))
             elif hm2: hours, mins = int(hm2.group(1)), int(hm2.group(2))
-            delta = timedelta(days=days, hours=hours, minutes=mins, seconds=secs)
-            ends_at = (now + delta).isoformat()
+            ends_at = (now + timedelta(days=days, hours=hours, minutes=mins)).isoformat()
         except Exception:
             ends_at = None
         return 'active', ends_at
 
     return 'ended', None
 
-# ── Discover stkNos from TAU search ───────────────────────────────────────────
-def discover_stknos(max_pages):
-    """
-    Crawl TAU search results pages and extract stkNos.
-    Tries the auction category first, then 'on sale soon'.
-    """
-    found = []
-    seen  = set()
-
-    # Category-filtered URLs (most relevant first)
-    search_bases = [
-        'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}',
-    ]
-
-    for base in search_bases:
-        print(f"  Source: {base.format(p='…')}")
-        for page in range(1, max_pages + 1):
-            html = fetch_html(base.format(p=page))
-            if not html:
-                print(f"  Page {page}: failed, stopping")
-                break
-            stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
-            added = sum(1 for s in stks if s not in seen and not seen.add(s) and found.append(s) is None)
-            print(f"  Page {page}: {added} new  ({len(found)} total)")
-            if added == 0 and page > 2:
-                print("  No new stkNos — stopping early")
-                break
-            time.sleep(REQUEST_DELAY * 0.5)
-
-    return found
-
-# ── Load seed file ─────────────────────────────────────────────────────────────
-def load_seed():
-    if not os.path.exists(SEED_FILE):
-        return []
-    stks = []
-    with open(SEED_FILE) as f:
-        for line in f:
-            line = line.strip()
-            if not line or line.startswith('#'):
-                continue
-            m = re.search(r'[0-9a-f]{32}', line)
-            if m:
-                stks.append(m.group(0))
-    return stks
-
-# ── Parse TAU detail page ──────────────────────────────────────────────────────
+# ── Table value extractor ──────────────────────────────────────────────────────
 def tv(html, *labels):
-    """Extract table cell value. Handles icons/images after label text (TAU uses ? icons)."""
+    """Extract table cell value. Handles icon images after label text."""
     for label in labels:
         esc = re.escape(label)
         for pat in [
-            # th with possible trailing icon image before </th>
             rf'<th[^>]*>[^<]*{esc}.*?</th>\s*<td[^>]*>(.*?)</td>',
-            # td label cell
             rf'<td[^>]*>[^<]*{esc}.*?</td>\s*<td[^>]*>(.*?)</td>',
         ]:
             m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
             if m:
                 val = re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
                 val = re.sub(r'\s+', ' ', val).strip()
-                if val and val != '-':
+                if val:
                     return val
-                elif val == '-':
-                    return '-'
     return ''
 
+# ── Parse listing detail page ──────────────────────────────────────────────────
 def parse_listing(stk, html, existing=None):
     now_iso = datetime.now(timezone.utc).isoformat()
     d = existing.copy() if existing else {}
-    s_html = html  # alias for price parsing
-    d.update({
-        'stk':        stk,
-        'url':        f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}',
-        'fetched_at': now_iso,
-        'panels':     d.get('panels', {}),
-        'airbags':    d.get('airbags', {}),
-    })
-    # Set listed_at only on first fetch
+    d.update({'stk': stk, 'url': f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}',
+              'fetched_at': now_iso})
+
     if 'listed_at' not in d:
         d['listed_at'] = now_iso
 
-    # ── Price — 100-char window after "Current Price" label ─────────────────
-    # TAU has HTML tags between label and number. Strip tags, short window = precise.
-    price_val = None
-    for label in ['current price', 'goods price']:
-        cp_idx = s_html.lower().find(label)
-        if cp_idx >= 0:
-            chunk = re.sub(r'<[^>]+>', ' ', s_html[cp_idx:cp_idx+150])
-            chunk = re.sub(r'\s+', ' ', chunk).strip()
-            m = re.search(r'([\d,]{3,})\s*Yen', chunk, re.IGNORECASE)
-            if m:
-                v = int(m.group(1).replace(',', ''))
-                if v >= 1000:
-                    price_val = v
-                    break
-    d['price'] = price_val
-    # ── Bid count ──────────────────────────────────────────────────────────────
-    bm = re.search(r'(?:No\.?\s*of\s*Bidder|Bidder\s*Count|No\.Bidder)[^\d]*(\d+)', html, re.IGNORECASE)
+    # ── Price ──────────────────────────────────────────────────────────────────
+    price_val, price_source = extract_price(html)
+    d['price']        = price_val
+    d['price_source'] = price_source
+
+    # ── Bids ──────────────────────────────────────────────────────────────────
+    bm = re.search(r'No\.\s*of\s*Bidder[^\d]*(\d+)', html, re.IGNORECASE)
     d['bids'] = int(bm.group(1)) if bm else 0
 
-    # ── Status + auction end time ─────────────────────────────────────────────
-    # Robust time-left: strip all tags from context, isolate value
-    tl_idx = html.lower().find('time left')
-    tlv = ''
-    if tl_idx >= 0:
-        ctx = re.sub(r'<[^>]+>', ' ', html[tl_idx:tl_idx+300])
-        ctx = re.sub(r'\s+', ' ', ctx).strip()
-        # Remove the "Time left" label prefix
-        ctx = re.sub(r'^time left\s*[:\s]*', '', ctx, flags=re.IGNORECASE).strip()
-        # Take first meaningful chunk (before double-space or newline)
-        tlv = ctx.split('  ')[0].strip()[:80]
-    new_status, ends_at = parse_time_left(tlv)
-
+    # ── Status ────────────────────────────────────────────────────────────────
+    new_status, ends_at = parse_time_left(html)
     prev_status = d.get('status', '')
     d['status'] = new_status
     if ends_at:
         d['auction_ends_at'] = ends_at
-    # Record when a listing transitions to ended
     if new_status == 'ended' and prev_status in ('active', 'upcoming') and 'ended_at' not in d:
         d['ended_at'] = now_iso
 
     # ── Basic info ─────────────────────────────────────────────────────────────
-    d['sno']   = re.sub(r'No\.', '', tv(html, 'Stock No.')).strip()
-    d['make']  = tv(html, 'Maker', 'Make') or d.get('make', '')
-    d['model'] = tv(html, 'Model')         or d.get('model', '')
-    d['grade'] = tv(html, 'Grade')         or d.get('grade', '')
-    d['body']  = tv(html, 'Body Type')     or d.get('body', '')
+    d['sno']   = re.sub(r'No\.', '', tv(html, 'Stock No.')).strip() or d.get('sno', '')
+    d['make']  = tv(html, 'Maker', 'Make')   or d.get('make', '')
+    d['model'] = tv(html, 'Model')           or d.get('model', '')
+    d['grade'] = tv(html, 'Grade')           or d.get('grade', '')
+    d['body']  = tv(html, 'Body Type')       or d.get('body', '')
 
     yr_raw = tv(html, 'First Registration', 'Year') or ''
     ym = re.search(r'(\d{4})', yr_raw)
@@ -250,12 +218,12 @@ def parse_listing(stk, html, existing=None):
     km = re.search(r'([\d,]+)\s*km', km_raw, re.IGNORECASE)
     if km: d['mileage'] = int(km.group(1).replace(',', ''))
 
-    d['col'] = tv(html, 'Color', 'Colour') or d.get('col', '')
-    d['drv'] = tv(html, 'Drive System', 'Drive') or d.get('drv', '')
-    d['tx']  = tv(html, 'Transmission')   or d.get('tx', '')
-    d['eng'] = tv(html, 'Engine Type')    or d.get('eng', '')
-    d['fuel']= tv(html, 'Fuel')           or d.get('fuel', '')
-    d['loc'] = tv(html, 'Location', 'Due in Place') or d.get('loc', '')
+    d['col']  = tv(html, 'Color', 'Colour')      or d.get('col', '')
+    d['drv']  = tv(html, 'Drive System', 'Drive') or d.get('drv', '')
+    d['tx']   = tv(html, 'Transmission')          or d.get('tx', '')
+    d['eng']  = tv(html, 'Engine Type')           or d.get('eng', '')
+    d['fuel'] = tv(html, 'Fuel')                  or d.get('fuel', '')
+    d['loc']  = tv(html, 'Location', 'Due in Place') or d.get('loc', '')
 
     cc_raw = tv(html, 'Displacement') or ''
     cc_m = re.search(r'([\d,]+)', cc_raw)
@@ -264,73 +232,109 @@ def parse_listing(stk, html, existing=None):
     cap_raw = tv(html, 'Capacity') or ''
     if cap_raw.strip().isdigit(): d['cap'] = int(cap_raw.strip())
 
-    # ── Damage info ────────────────────────────────────────────────────────────
-    d['damage']    = tv(html, 'Area of Damage')              or d.get('damage', '')
-    d['dc']        = tv(html, 'Drive Condition')             or d.get('dc', 'Unknown')
+    # ── Damage ────────────────────────────────────────────────────────────────
+    d['damage']    = tv(html, 'Area of Damage')                        or d.get('damage', '')
+    d['dc']        = tv(html, 'Drive Condition')                       or d.get('dc', 'Unknown')
     d['engine_s']  = tv(html, 'Engine (time of assessment)', 'Engine') or d.get('engine_s', '')
-    d['radiator']  = tv(html, 'Radiator & Condenser', 'Radiator') or d.get('radiator', '-')
-    d['shift']     = tv(html, 'Shift Lever')                 or d.get('shift', '-')
-    d['trans_oil'] = tv(html, 'Transmission Oil Pan', 'Oil Pan') or d.get('trans_oil', '-')
-    d['main_dmg']  = tv(html, 'Main Damage')                 or d.get('main_dmg', '')
+    d['radiator']  = tv(html, 'Radiator & Condenser', 'Radiator')     or d.get('radiator', '-')
+    d['shift']     = tv(html, 'Shift Lever')                          or d.get('shift', '-')
+    d['trans_oil'] = tv(html, 'Transmission Oil Pan', 'Oil Pan')      or d.get('trans_oil', '-')
+    d['main_dmg']  = tv(html, 'Main Damage')                          or d.get('main_dmg', '')
 
-    # ── Remarks ────────────────────────────────────────────────────────────────
+    # ── Remarks — truncate at TAU's advertising section ───────────────────────
+    rmk = ''
     rmk_m = re.search(
-        r'Remarks?\s*:?\s*</(?:th|td|strong|b)[^>]*>\s*<(?:td|dd)[^>]*>(.*?)</(?:td|dd)>',
+        r'Remarks?\s*:?\s*</[^>]+>\s*<[^>]+>(.*?)</[^>]+>',
         html, re.IGNORECASE | re.DOTALL
     )
     if not rmk_m:
-        rmk_m = re.search(r'Remarks?\s*[:\n](.*?)(?=\n\n|\Z)', html, re.IGNORECASE | re.DOTALL)
+        rmk_m = re.search(r'<th[^>]*>[^<]*Remarks?[^<]*</th>\s*<td[^>]*>(.*?)</td>',
+                           html, re.IGNORECASE | re.DOTALL)
     if rmk_m:
         rmk = re.sub(r'<[^>]+>', ' ', rmk_m.group(1)).strip()
-        rmk = re.sub(r'\s+', ' ', rmk)[:500]
-        if len(rmk) > 5:
-            d['rmk'] = rmk
-    if 'rmk' not in d:
-        d['rmk'] = ''
+        rmk = re.sub(r'\s+', ' ', rmk)
+    # Truncate TAU's "Related Products Used …" advertising section
+    rp_idx = rmk.lower().find('related products used')
+    if rp_idx > 0:
+        rmk = rmk[:rp_idx].strip()
+    d['rmk'] = rmk[:500] if rmk else d.get('rmk', '')
 
-    # ── Airbags ────────────────────────────────────────────────────────────────
+    # ── Airbags ───────────────────────────────────────────────────────────────
     ab_sec = re.search(r'[Aa]ir.?bag(.*?)(?=</table>|<h\d)', html, re.DOTALL)
     if ab_sec and 'finished' in ab_sec.group(1).lower():
         d['airbags'] = {'drv': 'Finished', 'pass': 'Finished'}
+    elif 'airbags' not in d:
+        d['airbags'] = {}
 
-    # ── Category (CBM / parts lookup key) ─────────────────────────────────────
+    if 'panels' not in d:
+        d['panels'] = {}
+
+    # ── Category (CBM lookup) ─────────────────────────────────────────────────
     bl = (d.get('body') or '').lower()
     cc = d.get('cc', 0)
     if 'kei' in bl and ('rv' in bl or 'suv' in bl or 'jeep' in bl):
         d['cat'] = 'kei-suv'
     elif 'kei' in bl:
         d['cat'] = 'kei'
-    elif any(k in bl for k in ['cab', '1box', 'mv&', 'van', 'bonnet', 'wagon']):
+    elif any(k in bl for k in ['cab', '1box', 'mv&', 'van', 'wagon']):
         d['cat'] = 'mpv'
     elif 'suv' in bl:
         d['cat'] = 'large-suv' if cc >= 3000 else ('mid-suv' if cc >= 1800 else 'compact-suv')
-    elif any(k in bl for k in ['sedan', 'saloon', 'hardtop']):
+    elif any(k in bl for k in ['sedan', 'saloon', 'hardtop', 'coupe']):
         d['cat'] = 'sedan'
     else:
         d['cat'] = d.get('cat', 'hatch')
 
     return d
 
+# ── Discovery ─────────────────────────────────────────────────────────────────
+def discover_stknos(max_pages):
+    found, seen = [], set()
+    base = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}'
+    print(f"  Crawling up to {max_pages} search pages…")
+    for page in range(1, max_pages + 1):
+        html = fetch_html(base.format(p=page))
+        if not html:
+            print(f"  Page {page}: failed, stopping")
+            break
+        stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
+        added = 0
+        for s in stks:
+            if s not in seen:
+                seen.add(s); found.append(s); added += 1
+        print(f"  Page {page}: {added} new  ({len(found)} total)")
+        if added == 0 and page > 2:
+            print("  No new stkNos — stopping")
+            break
+        time.sleep(REQUEST_DELAY * 0.4)
+    return found
+
+def load_seed():
+    if not os.path.exists(SEED_FILE): return []
+    stks = []
+    with open(SEED_FILE) as f:
+        for line in f:
+            line = line.strip()
+            if not line or line.startswith('#'): continue
+            m = re.search(r'[0-9a-f]{32}', line)
+            if m: stks.append(m.group(0))
+    return stks
+
 # ── Exchange rates ─────────────────────────────────────────────────────────────
 def fetch_rates():
     rates = {'jpu': 0.0064, 'usdKes': 130.0,
              'fetched_at': datetime.now(timezone.utc).isoformat()}
-
     data = fetch_json('https://api.frankfurter.app/latest?from=JPY&to=USD')
     if data and 'rates' in data:
         rates['jpu'] = round(data['rates']['USD'], 7)
         print(f"  JPY/USD : {rates['jpu']}")
-
-    data = fetch_json('https://open.er-api.com/v6/latest/USD')
-    if data and 'rates' in data and 'KES' in data['rates']:
-        rates['usdKes'] = round(data['rates']['KES'], 2)
-        print(f"  USD/KES : {rates['usdKes']}")
-    else:
-        data = fetch_json('https://api.exchangerate-api.com/v4/latest/USD')
+    for api in ['https://open.er-api.com/v6/latest/USD',
+                'https://api.exchangerate-api.com/v4/latest/USD']:
+        data = fetch_json(api)
         if data and 'rates' in data and 'KES' in data['rates']:
             rates['usdKes'] = round(data['rates']['KES'], 2)
-            print(f"  USD/KES : {rates['usdKes']} (fallback)")
-
+            print(f"  USD/KES : {rates['usdKes']}")
+            break
     return rates
 
 def update_history(rates):
@@ -349,52 +353,51 @@ def main():
 
     listings  = load_json(LISTINGS_FILE, [])
     by_stk    = {l['stk']: l for l in listings}
-    print(f"Dataset       : {len(listings)} listings  "
-          f"({sum(1 for l in listings if l.get('status')=='active')} active  "
-          f"{sum(1 for l in listings if l.get('status')=='upcoming')} upcoming  "
-          f"{sum(1 for l in listings if l.get('status')=='ended')} ended)")
+    n_active  = sum(1 for l in listings if l.get('status') == 'active')
+    n_upc     = sum(1 for l in listings if l.get('status') == 'upcoming')
+    n_ended   = sum(1 for l in listings if l.get('status') == 'ended')
+    print(f"Dataset       : {len(listings)}  ({n_active} active  {n_upc} upcoming  {n_ended} ended)")
 
+    # ── 1. Discover new listings ───────────────────────────────────────────────
     pages = INITIAL_PAGES if len(listings) < 50 else DISCOVER_PAGES
     print(f"\n── Discovery ({pages} pages) ──")
     discovered = discover_stknos(pages)
-
     seed = load_seed()
     print(f"Seed file     : {len(seed)}")
-
-    all_candidates = list(dict.fromkeys(discovered + seed))
-    new_stks = [s for s in all_candidates if s not in by_stk]
+    all_cands  = list(dict.fromkeys(discovered + seed))
+    new_stks   = [s for s in all_cands if s not in by_stk]
     print(f"New to fetch  : {len(new_stks)}")
 
-    # Fetch new listings
-    print(f"\n── Fetching {len(new_stks)} new listing(s) ──")
+    # ── 2. Fetch new listings ──────────────────────────────────────────────────
     fetched = failed = 0
+    if new_stks:
+        print(f"\n── Fetching {len(new_stks)} new listing(s) ──")
     for stk in new_stks:
-        url = f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}'
+        url  = f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}'
         print(f"  {stk[:12]}… ", end='', flush=True)
         html = fetch_html(url)
         if html:
             d = parse_listing(stk, html)
             by_stk[stk] = d
             fetched += 1
-            p = f"¥{d['price']:,}" if d.get('price') else '—'
+            p = fJ(d['price']) if d.get('price') else '—'
             print(f"✓ {d.get('make',''):<8} {d.get('model',''):<14} "
-                  f"{p:<12} {d.get('bids',0):>3}b  [{d['status']}]")
+                  f"{p:<12} {d.get('bids',0):>3}b  [{d['status']}]  [{d['price_source']}]")
         else:
-            failed += 1
-            print('✗')
+            failed += 1; print('✗')
         time.sleep(REQUEST_DELAY)
 
-    # Re-check active + upcoming listings
+    # ── 3. Re-check active + upcoming listings ─────────────────────────────────
     to_recheck = [l for l in by_stk.values()
                   if l.get('status') in ('active', 'upcoming')][:MAX_RECHECK]
     if to_recheck:
-        print(f"\n── Re-checking {len(to_recheck)} live/upcoming listing(s) ──")
+        print(f"\n── Re-checking {len(to_recheck)} active/upcoming listing(s) ──")
         for listing in to_recheck:
             html = fetch_html(listing['url'])
             if html:
                 prev_bids   = listing.get('bids', 0)
                 prev_status = listing.get('status', '')
-                updated = parse_listing(listing['stk'], html, existing=listing)
+                updated     = parse_listing(listing['stk'], html, existing=listing)
                 by_stk[listing['stk']] = updated
                 delta  = f" (+{updated['bids']-prev_bids})" if updated['bids'] > prev_bids else ''
                 change = f" → {updated['status']}" if updated['status'] != prev_status else ''
@@ -402,16 +405,44 @@ def main():
                       f"{updated['bids']:>3}b{delta}{change}")
             time.sleep(REQUEST_DELAY * 0.7)
 
-    # Save
+    # ── 4. Re-validate prices for ended listings with unverified prices ─────────
+    # Targets listings where price_source is not 'extracted' (wrong/missing price)
+    # Runs up to MAX_REVALIDATE per day until all historical prices are corrected
+    to_reval = [l for l in by_stk.values()
+                if l.get('status') == 'ended'
+                and l.get('price_source', 'none') not in ('extracted', 're-checked')][:MAX_REVALIDATE]
+    if to_reval:
+        print(f"\n── Re-validating {len(to_reval)} price(s) for ended listings ──")
+        rv_fixed = rv_failed = 0
+        for listing in to_reval:
+            html = fetch_html(listing['url'])
+            if html:
+                new_price, new_source = extract_price(html)
+                if new_source == 'extracted' and new_price:
+                    listing['price']        = new_price
+                    listing['price_source'] = 'extracted'
+                    rv_fixed += 1
+                    print(f"  ✓ {listing.get('make',''):<8} {listing.get('model',''):<12} "
+                          f"{fJ(new_price)}")
+                else:
+                    # Mark as re-checked so we don't attempt again needlessly
+                    listing['price_source'] = 're-checked'
+                    rv_failed += 1
+            time.sleep(REQUEST_DELAY * 0.7)
+        print(f"  Re-validated: {rv_fixed} prices corrected, {rv_failed} still unavailable")
+
+    # ── 5. Save ────────────────────────────────────────────────────────────────
     all_listings = list(by_stk.values())
     save_json(LISTINGS_FILE, all_listings)
-    n_active   = sum(1 for l in all_listings if l.get('status') == 'active')
-    n_upcoming = sum(1 for l in all_listings if l.get('status') == 'upcoming')
-    n_ended    = sum(1 for l in all_listings if l.get('status') == 'ended')
+    n_a = sum(1 for l in all_listings if l.get('status') == 'active')
+    n_u = sum(1 for l in all_listings if l.get('status') == 'upcoming')
+    n_e = sum(1 for l in all_listings if l.get('status') == 'ended')
+    n_p = sum(1 for l in all_listings if l.get('price_source') == 'extracted')
     print(f"\nSaved {len(all_listings)}  "
-          f"({fetched} new  {failed} failed  "
-          f"| {n_active} active  {n_upcoming} upcoming  {n_ended} ended)")
+          f"({fetched} new  {failed} failed  | {n_a} active  {n_u} upcoming  {n_e} ended  "
+          f"| {n_p} verified prices)")
 
+    # ── 6. Exchange rates ──────────────────────────────────────────────────────
     print(f"\n── Rates ──")
     rates = fetch_rates()
     save_json(RATES_FILE, rates)
@@ -419,7 +450,7 @@ def main():
     print(f"  ¥1 = KES {round(rates['jpu']*rates['usdKes'],4):.4f}")
 
     print('\n✓  Done')
-    return 0  # always exit 0 — partial fetch failures are expected
+    return 0  # always exit 0 — partial failures are expected
 
 if __name__ == '__main__':
     sys.exit(main())
