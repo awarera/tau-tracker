@@ -417,6 +417,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 /* Recently sold date */
 .sold-date{font-size:10.5px;color:var(--ink3)}
 
+
+/* Analytics chart grid responsive */
+@media(max-width:1100px){
+  .tab#tab-analytics .g3{grid-template-columns:1fr 1fr}
+  .tab#tab-analytics .g3 [style*="grid-column:span 2"]{grid-column:span 2}
+}
+@media(max-width:700px){
+  .tab#tab-analytics .g3{grid-template-columns:1fr}
+  .tab#tab-analytics .g3 [style*="grid-column:span 2"]{grid-column:span 1}
+}
+/* Prevent page overflow on all tabs */
+.pg{overflow-x:hidden}
+.fbar{overflow-x:visible}
+
 </style>
 </head>
 <body>
@@ -456,7 +470,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   <!-- Filter bar -->
   <div class="dash-fbar">
     <span style="font-size:11.5px;font-weight:700;color:var(--ink3);white-space:nowrap">Filter tiles:</span>
-    <select class="sel" id="dash-make" onchange="renderDash()"><option value="">All Makes</option></select>
+    <select class="sel" id="dash-make" onchange="syncModelFilter('dash');renderDash()"><option value="">All Makes</option></select>
     <select class="sel" id="dash-model" onchange="renderDash()"><option value="">All Models</option></select>
     <select class="sel" id="dash-status" onchange="renderDash()"><option value="">All Status</option><option value="active">Active Only</option><option value="upcoming">Upcoming Only</option><option value="ended">Sold Only</option></select>
     <input class="inp" type="number" id="dash-yearfrom" placeholder="Year from" oninput="renderDash()" style="width:90px">
@@ -606,7 +620,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="mod-sort" onchange="renderModels()"><option value="count">Sort: Count ↓</option><option value="bids">Avg Bids ↓</option><option value="price">Avg Price ↓</option><option value="score">Avg Score ↓</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Make / Model</th><th>Listings</th><th>Active</th><th>Avg Price ¥</th><th>Avg KES</th><th>Avg Bids</th><th>Price Range ¥</th><th>Fuel</th><th>Drive</th><th>KE Demand</th><th>Avg Score</th></tr></thead>
+    <thead><tr><th>Make / Model</th><th>Listings</th><th>Active</th><th>Avg Price ¥</th><th>Avg KES</th><th>Avg Bids</th><th>Price Range ¥</th><th>Fuel</th><th>Drive</th></tr></thead>
     <tbody id="models-tbody"></tbody>
   </table></div>
 </div>
@@ -658,7 +672,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="dt-q" placeholder="Search any field…" oninput="renderData()"></div>
     <select class="sel" id="dt-make" onchange="syncModelFilter('dt');renderData()"><option value="">All Makes</option></select>
     <select class="sel" id="dt-model" onchange="renderData()"><option value="">All Models</option></select>
-    <select class="sel" id="dt-status" onchange="renderData()"><option value="">All Status</option><option value="active">Live</option><option value="ended">Sold</option></select>
+    <select class="sel" id="dt-status" onchange="renderData()"><option value="">All Status</option><option value="active">Live</option><option value="ended">Sold</option><option value="upcoming">Upcoming</option></select>
     <input class="inp" type="number" id="dt-yearfrom" placeholder="Year from" oninput="renderData()" style="width:95px"><input class="inp" type="number" id="dt-yearto" placeholder="Year to" oninput="renderData()" style="width:85px">
     <select class="sel" id="dt-dc" onchange="renderData()"><option value="">All Condition</option><option>Rolling</option><option>Not Rolling</option></select>
     <select class="sel" id="dt-dmg" onchange="renderData()"><option value="">All Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
@@ -668,7 +682,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <input class="inp" type="number" id="dt-minprice" placeholder="Min ¥" oninput="renderData()" style="width:80px">
     <input class="inp" type="number" id="dt-maxprice" placeholder="Max ¥" oninput="renderData()" style="width:80px">
     <input class="inp" type="number" id="dt-maxkm" placeholder="Max KM" oninput="renderData()" style="width:90px">
-    <select class="sel" id="dt-minscore" onchange="renderData()"><option value="0">Any Score</option><option value="50">Score ≥50</option><option value="60">Score ≥60</option><option value="70">Score ≥70</option></select>
+    <select class="sel" id="dt-engine" onchange="renderData()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
@@ -690,7 +704,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   </div>
 
   <!-- Rates summary pill (tappable → Settings) -->
-  <div class="cp-rates-pill" onclick="goTab('settings',document.querySelectorAll('.nb')[8])">
+  <div class="cp-rates-pill" onclick="goTabByName('settings')">
     <span>📐 Rates:</span>
     <strong id="cp-rate-pill">¥1 = KES 0.83</strong>
     <span style="color:var(--bd2)">|</span>
@@ -1098,7 +1112,7 @@ function closePanel(){
 function addToBatch(stk){
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
   if(d)addVehicle(d);
-  goTab('calc',document.querySelectorAll('.nb')[7]);
+  goTabByName('calc');
   showToast(d?d.make+' '+d.model+' added to batch':'Added to batch','ok');
 }
 
@@ -1204,6 +1218,14 @@ function buildDetailInline(d){
     +'</div></div>'
     +'</div>';
 }
+function goTabByName(name){
+  var nbs=document.querySelectorAll('.nb');
+  var btn=null;
+  nbs.forEach(function(b){
+    if(b.getAttribute('onclick')&&b.getAttribute('onclick').indexOf("'"+name+"'")>-1)btn=b;
+  });
+  goTab(name,btn);
+}
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
   var q       = (gv(prefix+'-q')||'').toLowerCase();
@@ -1258,7 +1280,7 @@ function filterRows(status,prefix){
   });
 }
 function clearFilters(prefix){
-  ['q','make','model','body','dc','dmg','fuel','drv','engine','yearfrom','yearto','maxkm','minscore','minprice','maxprice','sort','status','daterange'].forEach(function(k){
+  ['q','make','model','body','dc','dmg','fuel','drv','engine','yearfrom','yearto','maxkm','minprice','maxprice','sort','status','daterange'].forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(!e)return;
     if(e.tagName==='SELECT')e.value='';else e.value='';
@@ -1348,43 +1370,65 @@ function renderDash(){
   var live=data.filter(function(d){return d.status==='active';});
   var withPrice=data.filter(function(d){return d.price;});
   var avgP=withPrice.length?Math.round(withPrice.reduce(function(s,d){return s+d.price;},0)/withPrice.length):0;
-  var topBidsItem=data.slice().sort(function(a,b){return(b.bids||0)-(a.bids||0)})[0];
+  var topBidsItem=data.slice().sort(function(a,b){return(b.bids||0)-(a.bids||0);})[0];
   setTxt('d-total',data.length);
-  setTxt('d-total-note',fst?fst+' only':'All statuses');
+  setTxt('d-total-note',fst?fst+' only':'all statuses');
   setTxt('d-live',live.length);
   setTxt('d-avg',avgP?fJ(avgP):'—');
-  setTxt('d-avg-usd',avgP?'≈ $'+Math.round(avgP*RATES.jpu).toLocaleString():'Ended listings only');
-  setTxt('d-top',topBidsItem?topBidsItem.bids+' bids':'—');
+  setTxt('d-avg-usd',avgP?'\u2248 $'+Math.round(avgP*RATES.jpu).toLocaleString():'Ended listings only');
+  setTxt('d-top',topBidsItem?(topBidsItem.bids||0)+' bids':'—');
   setTxt('d-top-note',topBidsItem?topBidsItem.make+' '+topBidsItem.model:'');
-  // Ending Soon (<24h)
+
+  // Ending Soon — sort active by auction_ends_at; fall back to fetched_at for items without countdown
   var now=new Date();
-  var ending=live.filter(function(d){
-    if(!d.auction_ends_at)return false;
-    var ms=new Date(d.auction_ends_at)-now;
-    return ms>0&&ms<864e5;
-  }).sort(function(a,b){return new Date(a.auction_ends_at)-new Date(b.auction_ends_at)}).slice(0,8);
+  var endingSorted=live.slice().sort(function(a,b){
+    // Items with auction_ends_at go first (sorted ascending = soonest first)
+    var ea=a.auction_ends_at?new Date(a.auction_ends_at).getTime():9e15;
+    var eb=b.auction_ends_at?new Date(b.auction_ends_at).getTime():9e15;
+    return ea-eb;
+  }).slice(0,8);
   var endEl=document.getElementById('d-ending');
-  if(endEl)endEl.innerHTML=ending.length?ending.map(function(d){
-    var ms=new Date(d.auction_ends_at)-now;
-    var hl=Math.floor((ms%864e5)/36e5),ml=Math.floor((ms%36e5)/6e4);
-    return '<div class="opp-item"><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<div class="opp-meta">'+(d.damage||'—')+' · '+d.bids+' bids · '+(d.price?fJ(d.price):'—')+'</div></div>'
-      +'<span class="countdown">'+hl+'h '+ml+'m</span></div>';
-  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No active auctions ending in 24h</div>';
-  // Recently Sold (last 7 days)
-  var week=new Date(now-7*864e5);
+  if(endEl)endEl.innerHTML=endingSorted.length?endingSorted.map(function(d){
+    var timeStr='';
+    if(d.auction_ends_at){
+      var ms=new Date(d.auction_ends_at)-now;
+      if(ms>0){
+        var dl=Math.floor(ms/864e5),hl=Math.floor((ms%864e5)/36e5),ml=Math.floor((ms%36e5)/6e4);
+        timeStr='<span class="countdown">'+dl+'d '+hl+'h '+ml+'m</span>';
+      } else {
+        timeStr='<span style="color:var(--ink4);font-size:11px">ending…</span>';
+      }
+    } else {
+      timeStr='<span style="color:var(--ink4);font-size:11px">active</span>';
+    }
+    return '<div class="opp-item">'
+      +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'—')+' \u00b7 '+d.bids+' bids \u00b7 '+(d.price?fJ(d.price):'—')+'</div></div>'
+      +timeStr+'</div>';
+  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No active auctions — check back after next scraper run</div>';
+
+  // Recently Sold — use ended_at if available, otherwise fetched_at as proxy
   var recent=data.filter(function(d){
-    if(d.status!=='ended'||!d.ended_at)return false;
-    return new Date(d.ended_at)>week;
-  }).sort(function(a,b){return new Date(b.ended_at)-new Date(a.ended_at)}).slice(0,8);
+    if(d.status!=='ended')return false;
+    var dt=d.ended_at?new Date(d.ended_at):d.fetched_at?new Date(d.fetched_at):null;
+    if(!dt)return false;
+    var age=(now-dt)/(1000*60*60*24);
+    return age<=7;
+  }).sort(function(a,b){
+    var da=a.ended_at||a.fetched_at||'';
+    var db=b.ended_at||b.fetched_at||'';
+    return db.localeCompare(da);
+  }).slice(0,8);
   var recEl=document.getElementById('d-recent');
   if(recEl)recEl.innerHTML=recent.length?recent.map(function(d){
-    var dt=new Date(d.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
-    return '<div class="opp-item"><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<div class="opp-meta">'+(d.damage||'—')+' · '+d.bids+' bids</div></div>'
+    var dtStr=d.ended_at||d.fetched_at||'';
+    var dtDisp=dtStr?new Date(dtStr).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
+    return '<div class="opp-item">'
+      +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'—')+' \u00b7 '+d.bids+' bids</div></div>'
       +'<div style="text-align:right"><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'
-      +'<div class="sold-date">'+dt+'</div></div></div>';
-  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No sold listings in last 7 days — check back after next scraper run</div>';
+      +'<div class="sold-date">'+dtDisp+'</div></div></div>';
+  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No recently sold listings — data builds up over time</div>';
 }
 
 /* ─── INTELLIGENCE ─── */
@@ -1472,7 +1516,6 @@ function renderModels(){
   rows.sort(function(a,b){
     if(srt==='bids'){var ab=Math.round(a.items.reduce(function(s,d){return s+d.bids;},0)/a.items.length),bb=Math.round(b.items.reduce(function(s,d){return s+d.bids;},0)/b.items.length);return bb-ab;}
     if(srt==='price'){var ap=a.items.filter(function(d){return d.price;}).reduce(function(s,d){return s+d.price;},0)/Math.max(1,a.items.filter(function(d){return d.price;}).length);var bp=b.items.filter(function(d){return d.price;}).reduce(function(s,d){return s+d.price;},0)/Math.max(1,b.items.filter(function(d){return d.price;}).length);return bp-ap;}
-    if(srt==='score'){var as2=Math.round(a.items.reduce(function(s,d){return s+buyScore(d);},0)/a.items.length),bs2=Math.round(b.items.reduce(function(s,d){return s+buyScore(d);},0)/b.items.length);return bs2-as2;}
     return b.items.length-a.items.length;
   });
   var tb=document.getElementById('models-tbody');
@@ -1483,8 +1526,6 @@ function renderModels(){
     var minP=prices.length?Math.min.apply(null,prices):0;
     var maxP=prices.length?Math.max.apply(null,prices):0;
     var avgB=Math.round(r.items.reduce(function(s,d){return s+d.bids;},0)/r.items.length);
-    var avgScore=Math.round(r.items.reduce(function(s,d){return s+buyScore(d);},0)/r.items.length);
-    var ke=getKeDemand(r.make,r.model);
     var topFuel=Object.entries(r.fuels).sort(function(a,b){return b[1]-a[1];})[0];
     var topDrv=Object.entries(r.drives).sort(function(a,b){return b[1]-a[1];})[0];
     return '<tr>'
@@ -1497,10 +1538,8 @@ function renderModels(){
       +'<td class="mono" style="font-size:11.5px;color:var(--ink3)">'+(minP&&maxP?fJ(minP)+'–'+fJ(maxP):'—')+'</td>'
       +'<td style="font-size:11.5px">'+(topFuel?topFuel[0]:'—')+'</td>'
       +'<td style="font-size:11.5px">'+(topDrv?topDrv[0]:'—')+'</td>'
-      +'<td><span class="dem '+KE_DMG_CLS[ke]+'">'+ke+'</span></td>'
-      +'<td><span class="score '+scoreCls(avgScore)+'">'+avgScore+'</span></td>'
       +'</tr>';
-  }).join(''):'<tr><td colspan="11" style="text-align:center;padding:20px;color:var(--ink4)">No models match</td></tr>';
+  }).join(''):'<tr><td colspan="9" style="text-align:center;padding:20px;color:var(--ink4)">No models match</td></tr>';
 }
 
 /* ─── ANALYTICS ─── */
@@ -1610,7 +1649,7 @@ function batchAllOpps(){
     var exists=BATCH.find(function(v){return v.stk===d.stk;});
     if(!exists)addVehicle(d);
   });
-  goTab('calc',document.querySelectorAll('.nb')[7]);
+  goTabByName('calc');
   showToast('Top '+sorted.length+' opportunities added to batch','ok');
 }
 
@@ -2012,7 +2051,7 @@ function useFR(i){
   if(r.route.indexOf('Kenya')>-1)document.getElementById('dest').value='kenya';
   else if(r.route.indexOf('UAE')>-1)document.getElementById('dest').value='uae';
   else document.getElementById('dest').value='tz';
-  recalcAll();showToast('Rate applied','ok');goTab('calc',document.querySelectorAll('.nb')[7]);
+  recalcAll();showToast('Rate applied','ok');goTabByName('calc');
 }
 function buildPartsRef(){
   var tbl=document.getElementById('pref-tbl');if(!tbl)return;
