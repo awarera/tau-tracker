@@ -183,6 +183,7 @@ def tv(html, *labels):
 def parse_listing(stk, html, existing=None):
     now_iso = datetime.now(timezone.utc).isoformat()
     d = existing.copy() if existing else {}
+    s_html = html  # alias for price parsing
     d.update({
         'stk':        stk,
         'url':        f'https://www.tau-trade.com/sal_frt/stock/detail?stkNo={stk}',
@@ -194,15 +195,21 @@ def parse_listing(stk, html, existing=None):
     if 'listed_at' not in d:
         d['listed_at'] = now_iso
 
-    # ── Price — use DOTALL so .* crosses HTML tags (e.g. </strong>) ───────────
-    pm = re.search(r'Current\s*Price.*?([\d,]+)\s*Yen', html, re.IGNORECASE | re.DOTALL)
-    if pm:
-        d['price'] = int(pm.group(1).replace(',', ''))
-    else:
-        # Fallback: first standalone price number before "(USD"
-        pm2 = re.search(r'([\d,]{3,})\s*Yen.*?\(USD', html, re.IGNORECASE | re.DOTALL)
-        d['price'] = int(pm2.group(1).replace(',','')) if pm2 else None
-
+    # ── Price — 100-char window after "Current Price" label ─────────────────
+    # TAU has HTML tags between label and number. Strip tags, short window = precise.
+    price_val = None
+    for label in ['current price', 'goods price']:
+        cp_idx = s_html.lower().find(label)
+        if cp_idx >= 0:
+            chunk = re.sub(r'<[^>]+>', ' ', s_html[cp_idx:cp_idx+150])
+            chunk = re.sub(r'\s+', ' ', chunk).strip()
+            m = re.search(r'([\d,]{3,})\s*Yen', chunk, re.IGNORECASE)
+            if m:
+                v = int(m.group(1).replace(',', ''))
+                if v >= 1000:
+                    price_val = v
+                    break
+    d['price'] = price_val
     # ── Bid count ──────────────────────────────────────────────────────────────
     bm = re.search(r'(?:No\.?\s*of\s*Bidder|Bidder\s*Count|No\.Bidder)[^\d]*(\d+)', html, re.IGNORECASE)
     d['bids'] = int(bm.group(1)) if bm else 0
