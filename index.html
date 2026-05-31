@@ -379,6 +379,44 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 .panel-close:hover{background:var(--s3);color:var(--ink)}
 .layout-single{overflow-x:auto}
 
+
+/* Inline accordion panel (replaces side panel) */
+.detail-expand>td{padding:0!important;border-top:2px solid var(--peach)!important;border-bottom:2px solid var(--peach)!important}
+.pi{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--s2);border-left:3px solid var(--peach)}
+.pi-sec{padding:14px 16px;border-right:1px solid var(--bd)}
+.pi-sec:last-child{border-right:none}
+.pi-stitle{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+.pi-price{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;color:var(--ink);margin-bottom:3px}
+.pi-row{display:flex;justify-content:space-between;padding:3.5px 0;border-bottom:1px solid var(--bd);font-size:12px;gap:8px}
+.pi-row:last-child{border-bottom:none}
+.pi-k{color:var(--ink3);flex-shrink:0}.pi-v{font-weight:500;text-align:right;color:var(--ink2)}
+@media(max-width:900px){.pi{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.pi{grid-template-columns:1fr}}
+/* Table layout fix — prevent grade column from stretching layout */
+.tbl-wrap{overflow-x:auto;max-width:100%}
+table{width:100%;table-layout:auto}
+.grade-cell{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* Ensure .pg never overflows */
+.pg{overflow-x:hidden}
+
+
+/* Inline row detail expansion */
+.row-det{background:var(--s2)}
+.row-det td{padding:0;border-bottom:2px solid var(--bd2)}
+.row-det-inner{padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
+.det-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
+/* Table full-width, grade column constrained */
+.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd);background:var(--wh)}
+td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+/* No more side panel on listing tabs — full width */
+.listing-layout{width:100%}
+/* Dashboard filter bar */
+.dash-fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:14px}
+/* Ending soon countdown */
+.countdown{font-family:'DM Mono',monospace;font-size:11px;color:var(--peach);font-weight:600}
+/* Recently sold date */
+.sold-date{font-size:10.5px;color:var(--ink3)}
+
 </style>
 </head>
 <body>
@@ -415,18 +453,32 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="tab on" id="tab-dash">
-  <div class="g4 mb12">
-    <div class="tile"><div class="tlbl">Total Listings</div><div class="tval b" id="d-total">—</div><div class="tnote">In tracker database</div></div>
-    <div class="tile"><div class="tlbl">Live Auctions</div><div class="tval p" id="d-live">—</div><div class="tnote">Active on TAU right now</div></div>
-    <div class="tile"><div class="tlbl">Avg Sold Price</div><div class="tval a" id="d-avg">—</div><div class="tnote">Ended listings with price</div></div>
-    <div class="tile"><div class="tlbl">Highest Bids</div><div class="tval g" id="d-top">—</div><div class="tnote">Most competitive listing</div></div>
+  <!-- Filter bar -->
+  <div class="dash-fbar">
+    <span style="font-size:11.5px;font-weight:700;color:var(--ink3);white-space:nowrap">Filter tiles:</span>
+    <select class="sel" id="dash-make" onchange="renderDash()"><option value="">All Makes</option></select>
+    <select class="sel" id="dash-model" onchange="renderDash()"><option value="">All Models</option></select>
+    <select class="sel" id="dash-status" onchange="renderDash()"><option value="">All Status</option><option value="active">Active Only</option><option value="upcoming">Upcoming Only</option><option value="ended">Sold Only</option></select>
+    <input class="inp" type="number" id="dash-yearfrom" placeholder="Year from" oninput="renderDash()" style="width:90px">
+    <input class="inp" type="number" id="dash-yearto" placeholder="Year to" oninput="renderDash()" style="width:80px">
+    <button class="btn bg bsm" onclick="clearFilters('dash')">✕ Clear</button>
   </div>
-  <div class="dash-grid">
-    <div class="card"><div class="sec-title">🏆 Top Opportunities <span class="sec-sub">by Buy Score</span></div><div id="d-opps"></div></div>
-    <div class="card"><div class="sec-title">⚡ Most Contested <span class="sec-sub">by bid count</span></div><div id="d-hot"></div></div>
-    <div class="card"><div class="sec-title">📦 Quick Batch <span class="sec-sub">start a container plan</span></div>
-      <div style="margin-bottom:12px;font-size:12.5px;color:var(--ink3);line-height:1.6">Add top-rated live listings to a container batch with one click. Costs and CBM calculated automatically.</div>
-      <button class="btn bp" onclick="goTab('calc',document.querySelectorAll('.nb')[7])">Open Container Planner →</button>
+  <!-- KPI tiles -->
+  <div class="g4 mb12">
+    <div class="tile"><div class="tlbl">Total Listings</div><div class="tval b" id="d-total">—</div><div class="tnote" id="d-total-note">In tracker database</div></div>
+    <div class="tile"><div class="tlbl">Active Auctions</div><div class="tval p" id="d-live">—</div><div class="tnote">Live countdowns running</div></div>
+    <div class="tile"><div class="tlbl">Avg Sold Price ¥</div><div class="tval a" id="d-avg">—</div><div class="tnote" id="d-avg-usd"></div></div>
+    <div class="tile"><div class="tlbl">Highest Bid Count</div><div class="tval g" id="d-top">—</div><div class="tnote" id="d-top-note">Most contested listing</div></div>
+  </div>
+  <!-- Bottom: Ending Soon + Recently Sold -->
+  <div class="g2">
+    <div class="card">
+      <div class="sec-title">⏱ Ending Soon <span class="sec-sub">active auctions in next 24h</span></div>
+      <div id="d-ending"></div>
+    </div>
+    <div class="card">
+      <div class="sec-title">✅ Recently Sold <span class="sec-sub">last 7 days</span></div>
+      <div id="d-recent"></div>
     </div>
   </div>
 </div>
@@ -446,36 +498,15 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <input class="inp" type="number" id="live-yearfrom" placeholder="Year from" oninput="renderLive()" style="width:90px">
     <input class="inp" type="number" id="live-yearto" placeholder="Year to" oninput="renderLive()" style="width:80px">
     <input class="inp" type="number" id="live-maxkm" placeholder="Max KM" oninput="renderLive()" style="width:90px">
-    <select class="sel" id="live-sort" onchange="renderLive()"><option value="ends_asc">Ending Soonest</option><option value="bids">Most Bids</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option><option value="mileage">KM ↑</option></select>
+    <select class="sel" id="live-sort" onchange="renderLive()"><option value="ends_asc">Ending Soonest</option><option value="bids">Most Bids</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
     <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
   </div>
-  <div class="fbar">
-    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="live-q" placeholder="Search make, model, grade…" oninput="renderLive()"></div>
-    <select class="sel" id="live-make" onchange="syncModelFilter('live');renderLive()"><option value="">All Makes</option></select>
-    <select class="sel" id="live-model" onchange="renderLive()"><option value="">All Models</option></select>
-    <input class="inp" type="number" id="live-yearfrom" placeholder="Year from" oninput="renderLive()" style="width:95px"><input class="inp" type="number" id="live-yearto" placeholder="Year to" oninput="renderLive()" style="width:85px">
-    <select class="sel" id="live-body" onchange="renderLive()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Sedan</option><option>Hatch</option></select>
-    <select class="sel" id="live-dc" onchange="renderLive()"><option value="">All Condition</option><option>Rolling</option><option>Not Rolling</option></select>
-    <select class="sel" id="live-dmg" onchange="renderLive()"><option value="">All Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
-    <select class="sel" id="live-fuel" onchange="renderLive()"><option value="">All Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
-    <select class="sel" id="live-drv" onchange="renderLive()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
-    <input class="inp" type="number" id="live-maxkm" placeholder="Max KM" oninput="renderLive()" style="width:90px">
-    <select class="sel" id="live-minscore" onchange="renderLive()"><option value="0">Any Score</option><option value="60">Score ≥60</option><option value="70">Score ≥70</option></select>
-    <select class="sel" id="live-sort" onchange="renderLive()"><option value="bids">Sort: Bids ↓</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
-    <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
-  </div>
-  <div class="layout-single">
-    <div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
-        <tbody id="live-tbody"></tbody>
-      </table></div>
-      <div class="txt-muted" id="live-count" style="margin-top:8px"></div>
-    </div>
-  </div><div id="live-panel-content" style="display:none"></div></div>
-  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
+    <tbody id="live-tbody"></tbody>
+  </table></div>
+  <div class="txt-muted" id="live-count" style="margin-top:8px"></div>
 </div>
-
 
 <!-- ═══ UPCOMING ═══ -->
 <div class="tab" id="tab-upcoming">
@@ -495,16 +526,11 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <select class="sel" id="upc-sort" onchange="renderUpcoming()"><option value="listed_desc">Newest Listed</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
     <button class="btn bg bsm" onclick="clearFilters('upc')">✕ Clear</button>
   </div>
-  <div class="layout-single">
-    <div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
-        <tbody id="upc-tbody"></tbody>
-      </table></div>
-      <div class="txt-muted" id="upc-count" style="margin-top:8px"></div>
-    </div>
-  </div><div id="upc-panel-content" style="display:none"></div></div>
-  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
+    <tbody id="upc-tbody"></tbody>
+  </table></div>
+  <div class="txt-muted" id="upc-count" style="margin-top:8px"></div>
 </div>
 
 <!-- ═══ SOLD ARCHIVE ═══ -->
@@ -523,58 +549,48 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
     <input class="inp" type="number" id="sold-yearto" placeholder="Year to" oninput="renderSold()" style="width:80px">
     <input class="inp" type="number" id="sold-maxkm" placeholder="Max KM" oninput="renderSold()" style="width:90px">
     <select class="sel" id="sold-daterange" onchange="renderSold()"><option value="">Any time</option><option value="7">Sold last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option><option value="90">Last 90d</option></select>
-    <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option><option value="mileage">KM ↑</option></select>
+    <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option></select>
     <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
   </div>
-  
-  <div class="layout-single">
-    <div>
-      <div class="tbl-wrap"><table>
-        <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
-        <tbody id="sold-tbody"></tbody>
-      </table></div>
-      <div class="txt-muted" id="sold-count" style="margin-top:8px"></div>
-    </div>
-  </div><div id="sold-panel-content" style="display:none"></div></div>
-  </div>
+  <div class="tbl-wrap"><table>
+    <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
+    <tbody id="sold-tbody"></tbody>
+  </table></div>
+  <div class="txt-muted" id="sold-count" style="margin-top:8px"></div>
 </div>
 
 <!-- ═══ INTELLIGENCE ═══ -->
 <div class="tab" id="tab-intel">
-    <div class="fbar" style="margin-bottom:12px">
+  <div class="fbar" style="margin-bottom:12px">
     <select class="sel" id="intel-make" onchange="renderIntel()"><option value="">All Makes</option></select>
     <select class="sel" id="intel-status" onchange="renderIntel()"><option value="">Live &amp; Sold</option><option value="active">Live Only</option><option value="ended">Sold Only</option></select>
     <select class="sel" id="intel-drv" onchange="renderIntel()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
     <select class="sel" id="intel-fuel" onchange="renderIntel()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
-    <select class="sel" id="intel-minscore" onchange="renderIntel()"><option value="55">Score &#x2265;55</option><option value="60">Score &#x2265;60</option><option value="70">Score &#x2265;70</option><option value="40">Score &#x2265;40</option></select>
-    <input class="inp" type="number" id="intel-yearfrom" placeholder="Year from" oninput="renderIntel()" style="width:95px">
-    <input class="inp" type="number" id="intel-yearto" placeholder="Year to" oninput="renderIntel()" style="width:85px">
-    <button class="btn bg bsm" onclick="clearFilters('intel')">&#x2715; Clear</button>
+    <select class="sel" id="intel-minscore" onchange="renderIntel()"><option value="55">Score ≥55</option><option value="60">Score ≥60</option><option value="70">Score ≥70</option><option value="40">Score ≥40</option></select>
+    <input class="inp" type="number" id="intel-yearfrom" placeholder="Year from" oninput="renderIntel()" style="width:90px">
+    <input class="inp" type="number" id="intel-yearto" placeholder="Year to" oninput="renderIntel()" style="width:80px">
+    <button class="btn bg bsm" onclick="clearFilters('intel')">✕ Clear</button>
   </div>
-  <div class="int-grid">
+  <div class="g2">
     <div>
       <div class="card mb12">
-        <div class="sec-title">🏆 Top Opportunities <span class="sec-sub">Buy Score ≥60</span></div>
+        <div class="sec-title">🏆 Top Opportunities <span class="sec-sub">filtered by score</span></div>
         <div id="intel-opps"></div>
       </div>
       <div class="card mb12">
         <div class="sec-title">📉 Price Anomalies <span class="sec-sub">≥15% below model average</span></div>
         <div id="intel-anom"></div>
       </div>
-      <div class="card">
-        <div class="sec-title">💱 Currency Watch</div>
-        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px" id="intel-rates"></div>
-        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">Rates update on each daily sync. Set defaults in Settings.</div>
-      </div>
     </div>
     <div>
       <div class="card mb12">
-        <div class="sec-title">🇰🇪 Kenya Demand Index</div>
-        <div id="intel-demand"></div>
+        <div class="sec-title">⚠ Bid Competition <span class="sec-sub">listings with 50+ bids</span></div>
+        <div id="intel-alerts"></div>
       </div>
       <div class="card">
-        <div class="sec-title">⚠ Bid Competition Alerts</div>
-        <div id="intel-alerts"></div>
+        <div class="sec-title">💱 Currency Watch</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px" id="intel-rates"></div>
+        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">Rates updated daily by scraper.</div>
       </div>
     </div>
   </div>
@@ -932,6 +948,55 @@ function syncNow(){showToast('Manual sync — will trigger scraper on GitHub Act
 function toggleSec(id){var e=document.getElementById(id);if(!e)return;e.style.display=e.style.display==='none'||!e.style.display?'block':'none';}
 
 /* ─── LISTING PANEL ─── */
+function buildPanelInline(d){
+  var eng=(d.engine_s||'').trim();
+  var engCol=eng==='Start'?'var(--g)':eng&&eng.toLowerCase().indexOf('not')>-1?'var(--rd)':'var(--ink2)';
+  var airbagDep=d.airbags&&(d.airbags.pass==='Finished'||d.airbags.drv==='Finished');
+  var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
+  var kes=d.price?'KES '+Math.round(d.price*RATES.jpu*RATES.usdKes/1000).toFixed(0)+'K':'';
+  var dateStr='';
+  if(d.status==='active'&&d.auction_ends_at){
+    var ms=new Date(d.auction_ends_at)-new Date();
+    if(ms>0){var dl=Math.floor(ms/864e5),hl=Math.floor((ms%864e5)/36e5);dateStr='\u23f1 '+dl+'d '+hl+'h remaining';}
+  }else if(d.status==='ended'&&d.ended_at){
+    dateStr='Ended '+new Date(d.ended_at).toLocaleDateString('en-GB',{day:'2-digit',month:'short',year:'numeric'});
+  }else if(d.status==='upcoming'){dateStr='On sale soon \u2014 bidding not yet open';}
+  function row(k,v,col){return '<div class="pi-row"><span class="pi-k">'+k+'</span><span class="pi-v"'+(col?' style="color:'+col+'"':'')+'>'+esc(v||'\u2014')+'</span></div>';}
+  var html='<div class="pi">';
+  // Section 1: Price
+  html+='<div class="pi-sec"><div class="pi-stitle">Price &amp; Bids</div>';
+  html+='<div class="pi-price">'+(d.price?fJ(d.price):'\u2014')+'</div>';
+  if(usd)html+='<div style="font-size:12px;color:var(--bl);margin-bottom:4px">'+usd+' / '+kes+'</div>';
+  html+='<div style="font-size:13px;font-weight:700;color:'+(d.bids>50?'var(--peach)':d.bids>20?'var(--am)':'var(--ink2)')+'">'+d.bids+' bids</div>';
+  if(dateStr)html+='<div style="font-size:11px;margin-top:6px;color:var(--peach)">'+dateStr+'</div>';
+  html+='</div>';
+  // Section 2: Specs
+  html+='<div class="pi-sec"><div class="pi-stitle">Specs</div>';
+  html+=row('Engine',eng||'\u2014',engCol);
+  html+=row('Drive',d.drv);html+=row('Fuel',d.fuel);html+=row('Trans',d.tx);html+=row('Location',d.loc);
+  html+='</div>';
+  // Section 3: Damage
+  html+='<div class="pi-sec"><div class="pi-stitle">Damage</div>';
+  html+=row('Area',d.damage||'None');
+  html+=row('Condition',d.dc,'');
+  var radCol=d.radiator&&d.radiator!=='-'&&d.radiator!=='ok'?'var(--rd)':'';
+  html+=row('Radiator',d.radiator||'-',radCol);
+  var oilBad=d.trans_oil&&d.trans_oil.indexOf('NG')>-1;
+  html+=row('Trans Oil',d.trans_oil||'-',oilBad?'var(--rd)':'');
+  html+=row('Shift Lever',d.shift||'-','');
+  if(airbagDep)html+='<div style="color:var(--rd);font-size:12px;font-weight:700;margin-top:6px">\u26a0 Airbags deployed</div>';
+  html+='</div>';
+  // Section 4: Actions + Remarks
+  html+='<div class="pi-sec"><div class="pi-stitle">Actions</div>';
+  html+='<div style="display:flex;flex-direction:column;gap:7px;margin-bottom:12px">';
+  html+='<button class="btn bp" onclick="addToBatch(\''+d.stk+'\')">&#x1f4e6; Run Deal Calc</button>';
+  html+='<a class="btn bg" href="'+d.url+'" target="_blank">&#x2197; Open TAU</a>';
+  html+='</div>';
+  if(d.rmk){html+='<div class="pi-stitle">Remarks</div><div style="font-size:11.5px;color:var(--am);line-height:1.55">'+esc(d.rmk)+'</div>';}
+  html+='</div>';
+  html+='</div>';
+  return html;
+}
 function buildPanel(d,scope){
   var panels  = d.panels||{};
   var ng      = Object.entries(panels).filter(function(kv){return kv[1]==='NG';});
@@ -1009,14 +1074,21 @@ function buildPanel(d,scope){
 function showPanel(stk,scope){
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
   if(!d)return;
+  // Remove all other expanded rows
+  document.querySelectorAll('.detail-expand').forEach(function(r){r.remove();});
   document.querySelectorAll('.trow').forEach(function(r){r.classList.remove('sel-row');});
-  document.querySelectorAll('[data-stk="'+stk+'"]').forEach(function(r){r.classList.add('sel-row');});
-  var pe=document.getElementById('global-panel-empty');
-  var pc=document.getElementById('global-panel-content');
-  if(pe)pe.style.display='none';
-  if(pc){pc.style.display='block';pc.innerHTML=buildPanel(d,scope);}
-  document.getElementById('global-panel').classList.add('open');
-  document.getElementById('panel-backdrop').classList.add('open');
+  // Toggle: if same row clicked again just close
+  if(window._openStk===stk){window._openStk=null;return;}
+  window._openStk=stk;
+  var row=document.querySelector('.trow[data-stk="'+stk+'"]');
+  if(!row)return;
+  row.classList.add('sel-row');
+  var table=row.closest('table');
+  var numCols=table&&table.rows[0]?table.rows[0].cells.length:11;
+  var tr=document.createElement('tr');
+  tr.className='detail-expand';
+  tr.innerHTML='<td colspan="'+numCols+'" style="padding:0">'+buildPanelInline(d)+'</td>';
+  row.parentNode.insertBefore(tr,row.nextSibling);
 }
 function closePanel(){
   document.getElementById('global-panel').classList.remove('open');
@@ -1036,17 +1108,16 @@ function tRow(d,scope){
   var km  = d.mileage?Number(d.mileage).toLocaleString()+'km':'—';
   var usd = d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
   var eng = (d.engine_s||'').trim();
-  var engCls = eng==='Start'?'color:var(--g)':eng&&eng!=='-'&&eng.toLowerCase().indexOf('not')>-1?'color:var(--rd)':'color:var(--ink3)';
-  var engLbl = eng&&eng!=='-'?eng:'—';
+  var engCls = eng==='Start'?'color:var(--g)':eng&&eng.toLowerCase().indexOf('not')>-1?'color:var(--rd)':'color:var(--ink3)';
   var dcLine = [d.dc||'',d.drv||'',d.fuel||''].filter(Boolean).join(' · ');
-  return '<tr class="trow" data-stk="'+d.stk+'" onclick="showPanel(\''+d.stk+'\',\''+scope+'\')">'
+  return '<tr class="trow" data-stk="'+d.stk+'" onclick="toggleRow(\''+d.stk+'\',\''+scope+'\')">'
     +'<td class="mono" style="font-size:11px;color:var(--ink3)">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
     +'<td><div class="bold">'+esc(d.make)+' '+esc(d.model)+'</div></td>'
-    +'<td style="font-size:11.5px;color:var(--ink2);max-width:160px;white-space:normal;line-height:1.35">'+esc(d.grade||'—')+'</td>'
+    +'<td class="grade-cell" title="'+esc(d.grade||'')+'">'+esc(d.grade||'—')+'</td>'
     +'<td class="mono">'+yr+'</td>'
     +'<td class="mono">'+km+'</td>'
     +'<td style="font-size:12px">'+(d.damage||'—')+'</td>'
-    +'<td style="font-size:12px;'+engCls+'">'+esc(engLbl)+'</td>'
+    +'<td style="font-size:12px;'+engCls+'">'+(eng&&eng!=='-'?esc(eng):'—')+'</td>'
     +'<td style="font-size:11px;color:var(--ink3)">'+esc(dcLine)+'</td>'
     +'<td><div class="mono bold">'+(d.price?fJ(d.price):'<span style="color:var(--ink4)">—</span>')+'</div>'
     +(usd?'<div style="font-size:11px;color:var(--bl);font-family:\'DM Mono\',monospace">'+usd+'</div>':'')+'</td>'
@@ -1055,6 +1126,84 @@ function tRow(d,scope){
     +'</tr>';
 }
 
+function toggleRow(stk,scope){
+  var detId='det-'+stk;
+  var existing=document.getElementById(detId);
+  // Close any open detail rows
+  document.querySelectorAll('.row-det').forEach(function(r){r.remove();});
+  document.querySelectorAll('.trow').forEach(function(r){r.classList.remove('sel-row');});
+  if(existing)return; // was open — just closed it
+  var d=ALL_DATA.find(function(x){return x.stk===stk;});
+  if(!d)return;
+  var row=document.querySelector('[data-stk="'+stk+'"]');
+  if(!row)return;
+  row.classList.add('sel-row');
+  var cols=11;
+  var det=document.createElement('tr');
+  det.id=detId;det.className='row-det';
+  det.innerHTML='<td colspan="'+cols+'">'+buildDetailInline(d)+'</td>';
+  row.parentNode.insertBefore(det,row.nextSibling);
+}
+function buildDetailInline(d){
+  var eng=(d.engine_s||'').trim();
+  var engCls=eng==='Start'?'var(--g)':eng&&eng.toLowerCase().indexOf('not')>-1?'var(--rd)':'var(--ink3)';
+  var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
+  var kes=d.price?'KES '+Math.round(d.price*RATES.jpu*RATES.usdKes/1000).toFixed(0)+'K':'';
+  var airbagDep=d.airbags&&(d.airbags.pass==='Finished'||d.airbags.drv==='Finished');
+  var radBad=d.radiator&&d.radiator!=='-'&&d.radiator!=='ok'&&d.radiator.toLowerCase()!=='-';
+  // Countdown
+  var timerHtml='';
+  if(d.status==='active'&&d.auction_ends_at){
+    var ms=new Date(d.auction_ends_at)-new Date();
+    if(ms>0){var dl=Math.floor(ms/864e5),hl=Math.floor((ms%864e5)/36e5);
+      timerHtml='<div class="countdown" style="margin-bottom:8px">⏱ Ends in '+dl+'d '+hl+'h</div>';}
+  }
+  if(d.status==='ended'&&d.ended_at){
+    timerHtml='<div class="sold-date" style="margin-bottom:8px">Ended '+new Date(d.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>';
+  }
+  if(d.status==='upcoming'&&d.listed_at){
+    timerHtml='<div class="sold-date" style="margin-bottom:8px">Listed '+new Date(d.listed_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})+'</div>';
+  }
+  // Status badge
+  var sb=d.status==='active'?'<span class="badge b-live">ACTIVE</span>':d.status==='upcoming'?'<span class="badge b-warn">UPCOMING</span>':'<span class="badge b-sold">SOLD</span>';
+  // Chips
+  var chips='<div class="chips" style="margin-top:8px">';
+  chips+='<span class="chip '+(d.dc==='Rolling'?'ok':d.dc==='Not Rolling'?'bad':'')+'">'+esc(d.dc||'—')+'</span>';
+  var engChip=eng&&eng!=='-'?eng:'Unknown';
+  chips+='<span class="chip '+(engChip==='Start'?'ok':engChip.toLowerCase().indexOf('not')>-1?'bad':'')+'">Engine: <span style="color:'+engCls+'">'+esc(engChip)+'</span></span>';
+  if(radBad)chips+='<span class="chip '+(d.radiator==='Broken'?'bad':'warn')+'">Radiator: '+esc(d.radiator)+'</span>';
+  if(airbagDep)chips+='<span class="chip bad">⚠ Airbags deployed</span>';
+  if(d.trans_oil&&d.trans_oil.indexOf('NG')>-1)chips+='<span class="chip bad">Trans oil: NG</span>';
+  chips+='</div>';
+  // Specs
+  var specs=[
+    ['Price ¥',d.price?fJ(d.price):'No public price'],
+    ['USD / KES',usd&&kes?usd+' / '+kes:'—'],
+    ['Bids',String(d.bids||0)],
+    ['Damage',d.damage||'—'],
+    ['DC',d.dc||'—'],
+    ['Drive',d.drv||'—'],
+    ['Engine type',d.eng||'—'],
+    ['Fuel',d.fuel||'—'],
+    ['Trans',d.tx||'—'],
+    ['Year',String(d.year||'—')],
+    ['KM',d.mileage?Number(d.mileage).toLocaleString()+'km':'—'],
+    ['Location',d.loc||'—'],
+  ];
+  var specsHtml=specs.map(function(r){
+    return '<div class="spec-row"><span class="spec-k">'+r[0]+'</span><span class="spec-v">'+esc(r[1])+'</span></div>';
+  }).join('');
+  return '<div class="row-det-inner">'
+    +'<div><div class="det-sec-title">Status</div>'+timerHtml+sb+chips+'</div>'
+    +'<div><div class="det-sec-title">Specs</div>'+specsHtml+'</div>'
+    +'<div><div class="det-sec-title">Actions</div>'
+    +(d.rmk?'<div style="font-size:12px;color:var(--am);line-height:1.55;margin-bottom:12px;padding:8px;background:var(--abg);border-radius:var(--rs)"><strong>Remarks:</strong> '+esc(d.rmk)+'</div>':'')
+    +'<div style="display:flex;flex-direction:column;gap:8px;margin-top:8px">'
+    +'<button class="btn bp" onclick="addToBatch(\''+d.stk+'\')">📦 Run Deal Calc</button>'
+    +'<a class="btn bg" href="https://www.tau-trade.com/sal_frt/stock/detail?stkNo='+d.stk+'" target="_blank">↗ Open on TAU</a>'
+    +'</div></div>'
+    +'</div>';
+}
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
   var q       = (gv(prefix+'-q')||'').toLowerCase();
@@ -1120,6 +1269,8 @@ function clearFilters(prefix){
   else if(prefix==='an'){renderAnalytics();}
   else if(prefix==='intel')renderIntel();
   else if(prefix==='upc')renderUpcoming();
+  else if(prefix==='dash'){renderDash();}
+  else if(prefix==='dash')renderDash();
 }
 function sortRows(rows,srt){
   return rows.slice().sort(function(a,b){
@@ -1183,25 +1334,57 @@ function renderSold(){
 
 /* ─── DASHBOARD ─── */
 function renderDash(){
-  var live=ALL_DATA.filter(function(d){return d.status==='active';});
-  var withPrice=ALL_DATA.filter(function(d){return d.price;});
+  var mk=gv('dash-make')||'',mdl=gv('dash-model')||'';
+  var fst=gv('dash-status')||'';
+  var yrfrom=parseInt(gv('dash-yearfrom'))||0,yrto=parseInt(gv('dash-yearto'))||0;
+  var data=ALL_DATA.filter(function(d){
+    if(mk&&d.make!==mk)return false;
+    if(mdl&&d.model!==mdl)return false;
+    if(fst&&d.status!==fst)return false;
+    if(yrfrom&&d.year&&d.year<yrfrom)return false;
+    if(yrto&&d.year&&d.year>yrto)return false;
+    return true;
+  });
+  var live=data.filter(function(d){return d.status==='active';});
+  var withPrice=data.filter(function(d){return d.price;});
   var avgP=withPrice.length?Math.round(withPrice.reduce(function(s,d){return s+d.price;},0)/withPrice.length):0;
-  var topBids=ALL_DATA.reduce(function(mx,d){return d.bids>mx?d.bids:mx;},0);
-  setTxt('d-total',ALL_DATA.length);
+  var topBidsItem=data.slice().sort(function(a,b){return(b.bids||0)-(a.bids||0)})[0];
+  setTxt('d-total',data.length);
+  setTxt('d-total-note',fst?fst+' only':'All statuses');
   setTxt('d-live',live.length);
   setTxt('d-avg',avgP?fJ(avgP):'—');
-  setTxt('d-top',topBids+' bids');
-  var sorted=ALL_DATA.filter(function(d){return d.price;}).sort(function(a,b){return buyScore(b)-buyScore(a);}).slice(0,5);
-  var oppEl=document.getElementById('d-opps');
-  if(oppEl)oppEl.innerHTML=sorted.map(function(d,i){
-    var s=buyScore(d);
-    return '<div class="opp-item"><span class="opp-num">'+(i+1)+'</span><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+' '+esc(d.grade)+'</div><div class="opp-meta">'+(d.damage||'—')+' &middot; '+d.bids+' bids &middot; '+(d.price?fJ(d.price):'—')+'</div></div><span class="opp-score" style="color:var(--g)">'+s+'</span></div>';
-  }).join('');
-  var hot=ALL_DATA.slice().sort(function(a,b){return b.bids-a.bids;}).slice(0,5);
-  var hotEl=document.getElementById('d-hot');
-  if(hotEl)hotEl.innerHTML=hot.map(function(d,i){
-    return '<div class="opp-item"><span class="opp-num">'+(i+1)+'</span><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div><div class="opp-meta">'+d.bids+' bids &middot; '+(d.price?fJ(d.price):'—')+'</div></div><span class="badge '+(d.status==='active'?'b-live':'b-sold')+'">'+d.status.toUpperCase()+'</span></div>';
-  }).join('');
+  setTxt('d-avg-usd',avgP?'≈ $'+Math.round(avgP*RATES.jpu).toLocaleString():'Ended listings only');
+  setTxt('d-top',topBidsItem?topBidsItem.bids+' bids':'—');
+  setTxt('d-top-note',topBidsItem?topBidsItem.make+' '+topBidsItem.model:'');
+  // Ending Soon (<24h)
+  var now=new Date();
+  var ending=live.filter(function(d){
+    if(!d.auction_ends_at)return false;
+    var ms=new Date(d.auction_ends_at)-now;
+    return ms>0&&ms<864e5;
+  }).sort(function(a,b){return new Date(a.auction_ends_at)-new Date(b.auction_ends_at)}).slice(0,8);
+  var endEl=document.getElementById('d-ending');
+  if(endEl)endEl.innerHTML=ending.length?ending.map(function(d){
+    var ms=new Date(d.auction_ends_at)-now;
+    var hl=Math.floor((ms%864e5)/36e5),ml=Math.floor((ms%36e5)/6e4);
+    return '<div class="opp-item"><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'—')+' · '+d.bids+' bids · '+(d.price?fJ(d.price):'—')+'</div></div>'
+      +'<span class="countdown">'+hl+'h '+ml+'m</span></div>';
+  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No active auctions ending in 24h</div>';
+  // Recently Sold (last 7 days)
+  var week=new Date(now-7*864e5);
+  var recent=data.filter(function(d){
+    if(d.status!=='ended'||!d.ended_at)return false;
+    return new Date(d.ended_at)>week;
+  }).sort(function(a,b){return new Date(b.ended_at)-new Date(a.ended_at)}).slice(0,8);
+  var recEl=document.getElementById('d-recent');
+  if(recEl)recEl.innerHTML=recent.length?recent.map(function(d){
+    var dt=new Date(d.ended_at).toLocaleDateString('en-GB',{day:'numeric',month:'short'});
+    return '<div class="opp-item"><div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'—')+' · '+d.bids+' bids</div></div>'
+      +'<div style="text-align:right"><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'
+      +'<div class="sold-date">'+dt+'</div></div></div>';
+  }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:10px 0">No sold listings in last 7 days — check back after next scraper run</div>';
 }
 
 /* ─── INTELLIGENCE ─── */
@@ -1216,26 +1399,28 @@ function renderIntel(){
   var minscore=parseInt(gv('intel-minscore'))||55;
   var sorted=data.filter(function(d){return d.price&&buyScore(d)>=minscore;})
     .map(function(d){return{d:d,score:buyScore(d)};})
-    .sort(function(a,b){return b.score-a.score;}).slice(0,10);
+    .sort(function(a,b){return b.score-a.score;}).slice(0,12);
   var oppEl=document.getElementById('intel-opps');
   if(oppEl)oppEl.innerHTML=sorted.length?sorted.map(function(x){
     var d=x.d,s=x.score;
     var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
     var kes=d.price?'KES '+Math.round(d.price*RATES.jpu*RATES.usdKes/1000).toFixed(0)+'K':'';
-    return '<div class="opp-item"><span class="score '+scoreCls(s)+'" style="flex-shrink:0">'+s+'</span>'
-      +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+' '+esc(d.grade)+'</div>'
-      +'<div class="opp-meta">'+(d.damage||'—')+' &middot; '+d.bids+' bids &middot; '+(d.price?fJ(d.price):'—')+(usd?' / '+usd+' / '+kes:'')+'</div>'
-      +'<div class="opp-meta">'+(d.year||'')+' &middot; '+(d.mileage?d.mileage.toLocaleString()+'km':'')+' &middot; '+d.dc+'</div></div>'
+    var sc=scoreCls(s);
+    return '<div class="opp-item"><span class="score '+sc+'" style="flex-shrink:0">'+s+'</span>'
+      +'<div class="opp-info">'
+      +'<div class="opp-name">'+esc(d.make)+' '+esc(d.model)+' '+esc(d.grade)+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'\u2014')+' \u00b7 '+d.bids+' bids \u00b7 '+(d.price?fJ(d.price):'\u2014')+(usd?' / '+usd+' / '+kes:'')+'</div>'
+      +'<div class="opp-meta">'+(d.year||'')+' \u00b7 '+(d.mileage?d.mileage.toLocaleString()+'km':'')+' \u00b7 '+d.dc+'</div></div>'
       +'<button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button>'
       +'</div>';
   }).join('')+'<div style="margin-top:8px"><button class="btn bg bsm" onclick="batchAllOpps()">+ Add top 5 to batch</button></div>'
-  :'<div style="font-size:12.5px;color:var(--ink3);padding:12px 0">No listings match filters with Buy Score \u2265'+minscore+'.</div>';
+  :'<div style="font-size:12.5px;color:var(--ink3);padding:12px 0">No listings match with Buy Score \u2265'+minscore+'</div>';
   var anoms=data.filter(function(d){
     if(!d.price)return false;
     var k=d.make+' '+d.model;var avg=modelAvg[k];
     if(!avg||avg.n<2)return false;
     return d.price<(avg.sum/avg.n)*0.85;
-  }).sort(function(a,b){return a.price-b.price;}).slice(0,5);
+  }).sort(function(a,b){return a.price-b.price;}).slice(0,6);
   var anomEl=document.getElementById('intel-anom');
   if(anomEl)anomEl.innerHTML=anoms.length?anoms.map(function(d){
     var k=d.make+' '+d.model;var avg=modelAvg[k];var a=Math.round(avg.sum/avg.n);
@@ -1243,43 +1428,21 @@ function renderIntel(){
     var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
     return '<div class="alert-item"><div class="alert-dot" style="background:var(--g)"></div>'
       +'<div style="flex:1"><div style="font-size:12.5px;font-weight:600">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<div style="font-size:11.5px;color:var(--ink3)">'+(d.damage||'—')+' &middot; '+d.bids+' bids &middot; '+(d.year||'')+' &middot; '+d.dc+'</div></div>'
-      +'<div style="text-align:right">'
-      +'<div class="mono bold" style="color:var(--peach)">'+fJ(d.price)+'</div>'
+      +'<div style="font-size:11.5px;color:var(--ink3)">'+(d.damage||'\u2014')+' \u00b7 '+d.bids+' bids \u00b7 '+(d.year||'')+' \u00b7 '+d.dc+'</div></div>'
+      +'<div style="text-align:right"><div class="mono bold" style="color:var(--peach)">'+fJ(d.price)+'</div>'
       +(usd?'<div style="font-size:10.5px;color:var(--bl)">'+usd+'</div>':'')
-      +'<div style="font-size:10.5px;color:var(--g)">'+pct+'% below avg</div></div>'
+      +'<div style="font-size:10.5px;color:var(--g)">'+pct+'% below model avg ('+fJ(a)+')</div></div>'
       +'<button class="btn bp bxs" style="margin-left:8px" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button>'
       +'</div>';
   }).join(''):'<div style="font-size:12.5px;color:var(--ink3);padding:12px 0">Need 2+ sold of same model to detect anomalies.</div>';
-  var jkes=RATES.jpu*RATES.usdKes;
-  var ratesEl=document.getElementById('intel-rates');
-  if(ratesEl)ratesEl.innerHTML='<div class="tile"><div class="tlbl">JPY/USD</div><div class="tval b" style="font-size:14px">'+RATES.jpu.toFixed(4)+'</div></div>'
-    +'<div class="tile"><div class="tlbl">USD/KES</div><div class="tval b" style="font-size:14px">'+RATES.usdKes+'</div></div>'
-    +'<div class="tile"><div class="tlbl">\u00a51M in KES</div><div class="tval g" style="font-size:14px">KES '+Math.round(1000000*jkes).toLocaleString()+'</div></div>';
-  var demandData=[
-    {model:'JIMNY',status:'Very High',note:'52\u2013166 bids typical. Exceptional demand.'},
-    {model:'LAND CRUISER / FJ CRUISER',status:'Very High',note:'Tour ops & 4WD. Premium model.'},
-    {model:'HIACE',status:'Very High',note:'Commercial workhorse. Consistent.'},
-    {model:'X-TRAIL / FORESTER',status:'High',note:'Mid-size 4WD. Good absorption.'},
-    {model:'AQUA / NOTE / VEZEL',status:'High',note:'Budget hybrid. Strong wholesale.'},
-    {model:'NOAH / SIENTA / VOXY',status:'High',note:'Family MPV. Strong dealer demand.'},
-    {model:'PRIUS',status:'Medium',note:'Hybrid growing but mixed.'},
-    {model:'RAIZE / RUSH',status:'Medium',note:'Compact SUV emerging segment.'},
-    {model:'N-BOX / HUSTLER',status:'Low',note:'Kei market minimal in Kenya.'},
-    {model:'CROWN / NX / LEAF',status:'Low',note:'Luxury or EV niche only.'},
-  ];
-  var demEl=document.getElementById('intel-demand');
-  if(demEl)demEl.innerHTML=demandData.map(function(r){
-    return '<div class="spec-row"><span class="spec-k" style="font-size:12px">'+r.model+'</span><div style="text-align:right"><span class="dem '+KE_DMG_CLS[r.status]+'" style="font-size:10px">'+r.status+'</span><div style="font-size:10.5px;color:var(--ink3);margin-top:2px">'+r.note+'</div></div></div>';
-  }).join('');
-  var highComp=data.filter(function(d){return d.bids>50;}).sort(function(a,b){return b.bids-a.bids;}).slice(0,6);
+  var highComp=data.filter(function(d){return d.bids>50;}).sort(function(a,b){return b.bids-a.bids;}).slice(0,8);
   var alertEl=document.getElementById('intel-alerts');
   if(alertEl)alertEl.innerHTML=highComp.length?highComp.map(function(d){
     var cls=d.bids>100?'var(--peach)':'var(--am)';
-    var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'—';
+    var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'\u2014';
     return '<div class="alert-item"><div class="alert-dot" style="background:'+cls+'"></div>'
       +'<div style="flex:1"><div style="font-size:12.5px;font-weight:600">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<div style="font-size:11px;color:var(--ink3)">'+(d.damage||'—')+' &middot; '+(d.price?fJ(d.price):'—')+' / '+usd+'</div></div>'
+      +'<div style="font-size:11px;color:var(--ink3)">'+(d.damage||'\u2014')+' \u00b7 '+(d.price?fJ(d.price):'\u2014')+' / '+usd+'</div></div>'
       +'<div class="mono bold" style="color:'+cls+'">'+d.bids+' bids</div></div>';
   }).join(''):'<div style="color:var(--ink4);font-size:12px;padding:12px 0">No high-competition listings in current filter.</div>';
 }
@@ -1427,7 +1590,7 @@ function syncModelFilter(prefix){populateModelFilter(prefix+'-make',prefix+'-mod
 function populateMakeFilters(){
   var makes=[...new Set(ALL_DATA.map(function(d){return d.make;}))].sort();
   var years=[...new Set(ALL_DATA.map(function(d){return d.year;}).filter(Boolean))].sort(function(a,b){return b-a;});
-  ['live-make','sold-make','upc-make','ap-make','mod-make','data-make','dt-make','an-make','intel-make'].forEach(function(id){
+  ['live-make','sold-make','upc-make','ap-make','mod-make','data-make','dt-make','an-make','intel-make','dash-make'].forEach(function(id){
     var sel=document.getElementById(id);
     if(!sel)return;
     makes.forEach(function(m){var o=document.createElement('option');o.value=m;o.textContent=m;sel.appendChild(o);});
