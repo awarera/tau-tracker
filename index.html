@@ -431,6 +431,23 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 .pg{overflow-x:hidden}
 .fbar{overflow-x:visible}
 
+
+/* Dual-thumb USD price range slider */
+.range-dual{display:flex;flex-direction:column;gap:2px;min-width:175px;padding:4px 2px 2px}
+.range-track{position:relative;height:4px;background:var(--bd);border-radius:2px;margin:8px 6px 2px}
+.range-fill{position:absolute;height:100%;background:var(--peach);border-radius:2px;pointer-events:none}
+.range-dual input[type="range"]{position:absolute;top:-5px;left:0;width:100%;height:14px;
+  background:transparent;-webkit-appearance:none;appearance:none;pointer-events:none;margin:0;padding:0}
+.range-dual input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
+  border-radius:50%;background:var(--peach);border:2px solid var(--wh);
+  box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer;pointer-events:all}
+.range-dual input[type="range"]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;
+  background:var(--peach);border:2px solid var(--wh);cursor:pointer;pointer-events:all;border:none}
+.range-vals{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
+.range-vals .rv-lo,.range-vals .rv-hi{font-size:10.5px;font-weight:600;
+  color:var(--peach);font-family:'DM Mono',monospace}
+.range-vals .rv-lbl{font-size:10px;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px}
+
 </style>
 </head>
 <body>
@@ -513,6 +530,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <input class="inp" type="number" id="live-yearto" placeholder="Year to" oninput="renderLive()" style="width:80px">
     <input class="inp" type="number" id="live-maxkm" placeholder="Max KM" oninput="renderLive()" style="width:90px">
     <select class="sel" id="live-sort" onchange="renderLive()"><option value="ends_asc">Ending Soonest</option><option value="bids">Most Bids</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
+    <div class="range-dual">
+    <div class="range-track">
+      <div class="range-fill" id="live-usd-fill"></div>
+      <input type="range" id="live-minusd" min="0" max="20000" step="250" value="0"
+             oninput="syncRange('live');renderLive()">
+      <input type="range" id="live-maxusd" min="0" max="20000" step="250" value="20000"
+             oninput="syncRange('live');renderLive()">
+    </div>
+    <div class="range-vals">
+      <span class="rv-lo" id="live-usd-lo">$0</span>
+      <span class="rv-lbl">USD price</span>
+      <span class="rv-hi" id="live-usd-hi">any</span>
+    </div>
+  </div>
     <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -538,6 +569,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <input class="inp" type="number" id="upc-yearto" placeholder="Year to" oninput="renderUpcoming()" style="width:80px">
     <select class="sel" id="upc-daterange" onchange="renderUpcoming()"><option value="">Any time</option><option value="7">Listed last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option></select>
     <select class="sel" id="upc-sort" onchange="renderUpcoming()"><option value="listed_desc">Newest Listed</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
+    <div class="range-dual">
+    <div class="range-track">
+      <div class="range-fill" id="upc-usd-fill"></div>
+      <input type="range" id="upc-minusd" min="0" max="20000" step="250" value="0"
+             oninput="syncRange('upc');renderUpcoming()">
+      <input type="range" id="upc-maxusd" min="0" max="20000" step="250" value="20000"
+             oninput="syncRange('upc');renderUpcoming()">
+    </div>
+    <div class="range-vals">
+      <span class="rv-lo" id="upc-usd-lo">$0</span>
+      <span class="rv-lbl">USD price</span>
+      <span class="rv-hi" id="upc-usd-hi">any</span>
+    </div>
+  </div>
     <button class="btn bg bsm" onclick="clearFilters('upc')">✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -564,6 +609,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <input class="inp" type="number" id="sold-maxkm" placeholder="Max KM" oninput="renderSold()" style="width:90px">
     <select class="sel" id="sold-daterange" onchange="renderSold()"><option value="">Any time</option><option value="7">Sold last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option><option value="90">Last 90d</option></select>
     <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option></select>
+    <div class="range-dual">
+    <div class="range-track">
+      <div class="range-fill" id="sold-usd-fill"></div>
+      <input type="range" id="sold-minusd" min="0" max="20000" step="250" value="0"
+             oninput="syncRange('sold');renderSold()">
+      <input type="range" id="sold-maxusd" min="0" max="20000" step="250" value="20000"
+             oninput="syncRange('sold');renderSold()">
+    </div>
+    <div class="range-vals">
+      <span class="rv-lo" id="sold-usd-lo">$0</span>
+      <span class="rv-lbl">USD price</span>
+      <span class="rv-hi" id="sold-usd-hi">any</span>
+    </div>
+  </div>
     <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -583,6 +642,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="intel-minscore" onchange="renderIntel()"><option value="55">Score ≥55</option><option value="60">Score ≥60</option><option value="70">Score ≥70</option><option value="40">Score ≥40</option></select>
     <input class="inp" type="number" id="intel-yearfrom" placeholder="Year from" oninput="renderIntel()" style="width:90px">
     <input class="inp" type="number" id="intel-yearto" placeholder="Year to" oninput="renderIntel()" style="width:80px">
+    <div class="range-dual">
+    <div class="range-track">
+      <div class="range-fill" id="intel-usd-fill"></div>
+      <input type="range" id="intel-minusd" min="0" max="20000" step="250" value="0"
+             oninput="syncRange('intel');renderIntel()">
+      <input type="range" id="intel-maxusd" min="0" max="20000" step="250" value="20000"
+             oninput="syncRange('intel');renderIntel()">
+    </div>
+    <div class="range-vals">
+      <span class="rv-lo" id="intel-usd-lo">$0</span>
+      <span class="rv-lbl">USD price</span>
+      <span class="rv-hi" id="intel-usd-hi">any</span>
+    </div>
+  </div>
     <button class="btn bg bsm" onclick="clearFilters('intel')">✕ Clear</button>
   </div>
   <div class="g2">
@@ -679,8 +752,20 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dt-fuel" onchange="renderData()"><option value="">All Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
     <select class="sel" id="dt-body" onchange="renderData()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Sedan</option><option>Hatch</option></select>
     <select class="sel" id="dt-drv" onchange="renderData()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
-    <input class="inp" type="number" id="dt-minprice" placeholder="Min ¥" oninput="renderData()" style="width:80px">
-    <input class="inp" type="number" id="dt-maxprice" placeholder="Max ¥" oninput="renderData()" style="width:80px">
+    <div class="range-dual">
+    <div class="range-track">
+      <div class="range-fill" id="dt-usd-fill"></div>
+      <input type="range" id="dt-minusd" min="0" max="20000" step="250" value="0"
+             oninput="syncRange('dt');renderData()">
+      <input type="range" id="dt-maxusd" min="0" max="20000" step="250" value="20000"
+             oninput="syncRange('dt');renderData()">
+    </div>
+    <div class="range-vals">
+      <span class="rv-lo" id="dt-usd-lo">$0</span>
+      <span class="rv-lbl">USD price</span>
+      <span class="rv-hi" id="dt-usd-hi">any</span>
+    </div>
+  </div>
     <input class="inp" type="number" id="dt-maxkm" placeholder="Max KM" oninput="renderData()" style="width:90px">
     <select class="sel" id="dt-engine" onchange="renderData()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
@@ -1226,6 +1311,23 @@ function goTabByName(name){
   });
   goTab(name,btn);
 }
+function syncRange(prefix){
+  var loEl=document.getElementById(prefix+'-minusd');
+  var hiEl=document.getElementById(prefix+'-maxusd');
+  if(!loEl||!hiEl)return;
+  var lo=parseInt(loEl.value)||0;
+  var hi=parseInt(hiEl.value)||20000;
+  var mx=parseInt(loEl.max)||20000;
+  if(lo>hi){loEl.value=hi;lo=hi;}
+  if(hi<lo){hiEl.value=lo;hi=lo;}
+  var fill=document.getElementById(prefix+'-usd-fill');
+  if(fill){fill.style.left=(lo/mx*100)+'%';fill.style.width=((hi-lo)/mx*100)+'%';}
+  var loLbl=document.getElementById(prefix+'-usd-lo');
+  var hiLbl=document.getElementById(prefix+'-usd-hi');
+  if(loLbl)loLbl.textContent=lo>0?'$'+lo.toLocaleString():'$0';
+  if(hiLbl)hiLbl.textContent=hi>=mx?'any':'$'+hi.toLocaleString();
+}
+function initRange(prefix){syncRange(prefix);}
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
   var q       = (gv(prefix+'-q')||'').toLowerCase();
@@ -1240,8 +1342,11 @@ function filterRows(status,prefix){
   var yrfrom  = parseInt(gv(prefix+'-yearfrom'))||0;
   var yrto    = parseInt(gv(prefix+'-yearto'))||0;
   var maxkm   = parseInt(gv(prefix+'-maxkm'))||0;
-  var minp    = parseInt(gv(prefix+'-minprice'))||0;
-  var maxp    = parseInt(gv(prefix+'-maxprice'))||0;
+  var minUsdEl = document.getElementById(prefix+'-minusd');
+  var maxUsdEl = document.getElementById(prefix+'-maxusd');
+  var minUsd = minUsdEl?parseInt(minUsdEl.value)||0:0;
+  var maxUsd = maxUsdEl?parseInt(maxUsdEl.value)||20000:20000;
+  var maxUsdCap = maxUsdEl?parseInt(maxUsdEl.max)||20000:20000;
   var dateRng = parseInt(gv(prefix+'-daterange'))||0;
   var fst     = status||gv(prefix+'-status')||'';
 
@@ -1268,8 +1373,11 @@ function filterRows(status,prefix){
     if(yrfrom&&d.year&&d.year<yrfrom) return false;
     if(yrto&&d.year&&d.year>yrto)     return false;
     if(maxkm&&d.mileage&&d.mileage>maxkm) return false;
-    if(minp&&d.price&&d.price<minp)   return false;
-    if(maxp&&d.price&&d.price>maxp)   return false;
+    if(d.price&&RATES.jpu){
+      var pUsd=Math.round(d.price*RATES.jpu);
+      if(minUsd>0&&pUsd<minUsd)return false;
+      if(maxUsd<maxUsdCap&&pUsd>maxUsd)return false;
+    }
     if(cutoff){
       var dateField = (fst==='ended'||prefix==='sold')?'ended_at':'listed_at';
       var dt = d[dateField]?new Date(d[dateField]):null;
@@ -2126,6 +2234,7 @@ function init(){
     buildFreightRoutes();buildPartsRef();updateDutyEff();updateRates();
     updateSetupSummary();updateCpRatesPill();
     renderDash();renderLive();renderUpcoming();renderSold();renderAnalytics();renderIntel();
+    ['live','upc','sold','dt','intel'].forEach(function(p){initRange(p);});
     renderPanel();
     var rp=document.getElementById('rate-pill');
     if(rp)rp.textContent='\u00a51 = KES '+(RATES.jpu*RATES.usdKes).toFixed(4);
