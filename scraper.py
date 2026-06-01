@@ -377,6 +377,8 @@ def main():
     print(f"TAU Tracker  ·  {ts}")
     print('─' * 56)
 
+    run_start      = time.monotonic()  # track wall time for safety valve
+    SAFETY_MINUTES = 75                   # stop loops if approaching 90-min timeout
     listings  = load_json(LISTINGS_FILE, [])
     by_stk    = {l['stk']: l for l in listings}
     n_active  = sum(1 for l in listings if l.get('status') == 'active')
@@ -414,11 +416,17 @@ def main():
         time.sleep(REQUEST_DELAY)
 
     # ── 3. Re-check active + upcoming listings ─────────────────────────────────
+    # No cap — ALL active/upcoming re-checked every run (bid counts + prices change daily)
     to_recheck = [l for l in by_stk.values()
-                  if l.get('status') in ('active', 'upcoming')][:MAX_RECHECK]
+                  if l.get('status') in ('active', 'upcoming')]
     if to_recheck:
         print(f"\n── Re-checking {len(to_recheck)} active/upcoming listing(s) ──")
+        RECHECK_DELAY  = REQUEST_DELAY * 0.4   # 0.6s — lighter than initial fetch
+        checked = 0
         for listing in to_recheck:
+            if (time.monotonic() - run_start) > SAFETY_MINUTES * 60:
+                print(f"  ⚠ {SAFETY_MINUTES}m safety limit — stopping after {checked} re-checks")
+                break
             html = fetch_html(listing['url'])
             if html:
                 prev_bids   = listing.get('bids', 0)
@@ -429,7 +437,8 @@ def main():
                 change = f" → {updated['status']}" if updated['status'] != prev_status else ''
                 print(f"  ↻ {updated.get('make',''):<8} {updated.get('model',''):<12} "
                       f"{updated['bids']:>3}b{delta}{change}")
-            time.sleep(REQUEST_DELAY * 0.7)
+            checked += 1
+            time.sleep(RECHECK_DELAY)
 
     # ── 4. Re-validate prices for ended listings with unverified prices ─────────
     # Targets listings where price_source is not 'extracted' (wrong/missing price)
@@ -441,6 +450,9 @@ def main():
         print(f"\n── Re-validating {len(to_reval)} price(s) for ended listings ──")
         rv_fixed = rv_failed = 0
         for listing in to_reval:
+            if (time.monotonic() - run_start) > SAFETY_MINUTES * 60:
+                print(f"  ⚠ Safety limit — stopping re-validation early")
+                break
             html = fetch_html(listing['url'])
             if html:
                 new_price, new_source = extract_price(html)
