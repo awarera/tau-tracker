@@ -81,36 +81,62 @@ def fJ(n):
 # ── Price extraction ───────────────────────────────────────────────────────────
 def extract_price(html):
     """
-    Reliably extract the bid/sale price from a TAU listing page.
+    Extract bid/sale price from a TAU listing detail page.
 
-    Strategy:
-      1. Find a price label in the HTML
-      2. Strip all HTML tags from the next 200 chars
-      3. Collect ALL Yen amounts in that window
-      4. Take the LARGEST value — main prices always dwarf fees/charges
-      5. Try up to 3 occurrences of the label (handles nav/footer noise)
+    Root cause of previous failures: TAU pages have a "related listings"
+    carousel near the top of the HTML (before the main content) that also
+    uses "Current Price: X Yen" labels. Naively finding the first "current
+    price" gives a related listing's price, not the main bid price.
+
+    Fix: TAU's main price section ALWAYS contains "No. of Bidder" immediately
+    after the price (even for 0-bid and on-sale-soon listings). The related
+    carousel does NOT have this field. So we anchor to "No. of Bidder" and
+    look back up to 500 chars — that window is guaranteed to contain only
+    the main listing's price section.
 
     Returns (price: int|None, source: str)
     """
-    labels = ['current price', 'suggested price', 'goods price', 'offer price']
+    # Strip all HTML tags once for clean text searching
+    text = re.sub(r'<[^>]+>', ' ', html)
+    text = re.sub(r'\s+', ' ', text).strip()
+    tl   = text.lower()
 
-    for label in labels:
-        start = 0
-        for _ in range(3):  # try up to 3 occurrences of this label
-            idx = html.lower().find(label, start)
-            if idx < 0:
-                break
-            chunk = re.sub(r'<[^>]+>', ' ', html[idx:idx + 200])
-            chunk = re.sub(r'\s+', ' ', chunk).strip()
-            matches = re.findall(r'([\d,]{3,})\s*Yen', chunk, re.IGNORECASE)
-            if matches:
-                values = [int(m.replace(',', '')) for m in matches if int(m.replace(',', '')) >= 1000]
+    # ── Primary: anchor to "No. of Bidder" (main price section only) ──────────
+    bid_idx = tl.find('no. of bidder')
+    if bid_idx > 0:
+        # Price label + value always appear before "No. of Bidder"
+        section = text[max(0, bid_idx - 500):bid_idx + 50]
+        for label in ['current price', 'suggested price', 'goods price', 'offer price']:
+            lidx = section.lower().find(label)
+            if lidx >= 0:
+                chunk = section[lidx:lidx + 300]
+                matches = re.findall(r'([\d,]{3,})\s*Yen', chunk, re.IGNORECASE)
+                values  = [int(m.replace(',', '')) for m in matches
+                           if int(m.replace(',', '')) >= 1000]
                 if values:
                     return max(values), 'extracted'
-            start = idx + 1
+        # Label not found but we're in the right section — take any Yen value
+        matches = re.findall(r'([\d,]{3,})\s*Yen', section, re.IGNORECASE)
+        values  = [int(m.replace(',', '')) for m in matches
+                   if int(m.replace(',', '')) >= 1000]
+        if values:
+            return max(values), 'fallback'
 
-    # Fallback: any price with USD notation (fees rarely show USD)
-    m = re.search(r'([\d,]{3,})\s*Yen[^)]{0,30}\(USD[\d,]+\)', html, re.IGNORECASE)
+    # ── Fallback: no "No. of Bidder" found (Tender / Stock items) ─────────────
+    # Use label search but require USD notation to avoid related-item pollution
+    for label in ['current price', 'suggested price', 'goods price', 'offer price']:
+        idx = tl.find(label)
+        if idx >= 0:
+            chunk = text[idx:idx + 300]
+            m = re.search(r'([\d,]{3,})\s*Yen[^)]{0,25}\(USD[\d,]+\)',
+                          chunk, re.IGNORECASE)
+            if m:
+                val = int(m.group(1).replace(',', ''))
+                if val >= 1000:
+                    return val, 'extracted'
+
+    # ── Last resort: any Yen+USD pattern on the page ──────────────────────────
+    m = re.search(r'([\d,]{3,})\s*Yen[^)]{0,25}\(USD[\d,]+\)', text, re.IGNORECASE)
     if m:
         val = int(m.group(1).replace(',', ''))
         if val >= 1000:
