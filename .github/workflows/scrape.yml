@@ -3,7 +3,7 @@ name: TAU Daily Scraper
 on:
   schedule:
     - cron: '0 5 * * *'   # 05:00 UTC = 08:00 Nairobi (EAT)
-  workflow_dispatch:       # manual trigger from Actions tab
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -24,7 +24,7 @@ jobs:
 
       - name: Run scraper
         run: python scraper.py
-        continue-on-error: true   # partial fetch failures are normal — always commit what we got
+        continue-on-error: true
 
       - name: Commit updated data files
         run: |
@@ -33,4 +33,5 @@ jobs:
           git add data/
           git diff --staged --quiet && echo "No changes to commit" || \
             git commit -m "scraper: $(date -u +'%Y-%m-%d %H:%M UTC')"
+          git pull --rebase --autostash
           git push
