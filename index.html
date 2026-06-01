@@ -673,11 +673,11 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   <!-- Bottom: Ending Soon + Recently Sold -->
   <div class="g2">
     <div class="card">
-      <div class="sec-title">⏱ Ending Soon <span class="sec-sub">active auctions in next 24h</span></div>
+      <div class="sec-title" data-sec="ending">⏱ Ending Soon — Route A &amp; B</div>
       <div id="d-ending"></div>
     </div>
     <div class="card">
-      <div class="sec-title">✅ Recently Sold <span class="sec-sub">last 7 days</span></div>
+      <div class="sec-title" data-sec="recent">🎯 Zero Bid Opportunities <span class="sec-sub">0 bids = no competition yet</span></div>
       <div id="d-recent"></div>
     </div>
   </div>
@@ -828,7 +828,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -1537,7 +1537,6 @@ function buildModelDrilldown(listings,make,model){
       +'<td style="font-size:11px;color:var(--ink3)">'+esc(d.grade||'—')+'</td>'
       +'<td class="mono">'+(d.year||'—')+'</td>'
       +'<td class="mono">'+(d.mileage?d.mileage.toLocaleString()+'km':'—')+'</td>'
-      +'<td style="font-size:12px">'+(d.damage||'—')+'</td>'
       +'<td style="font-size:12px;'+engCls+'">'+(eng||'—')+'</td>'
       +'<td><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'">'+esc(d.dc||'—')+'</span></td>'
       +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:11px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
@@ -1555,57 +1554,66 @@ function buildModelDrilldown(listings,make,model){
     +(avgPrice?'<div class="mono bold" style="font-size:12px">Avg '+fJ(avgPrice)+'</div>':'')
     +(maxBids?'<div style="font-size:11.5px;color:var(--am)">Peak '+maxBids+' bids</div>':'')
     +'</div>'
-    +'<div class="tbl-wrap"><table>'
-    +'<thead><tr><th>Stock</th><th>Status</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC</th><th>Price ¥/USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>'
+    +'<div class="tbl-wrap" style="overflow-x:auto;border-radius:var(--rs);border:1px solid var(--bd)"><table>'
+    +'<thead><tr><th style="min-width:72px">Stock</th><th>Status</th><th style="min-width:120px">Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>DC</th><th>Price ¥/USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>'
     +'<tbody>'+rowsHtml+'</tbody>'
     +'</table></div>'
     +'</div>';
 }
 
 function calcWelcome(){
-  var price = parseInt(document.getElementById('wc-price')?document.getElementById('wc-price').value:0)||0;
-  var dmg   = document.getElementById('wc-dmg')?document.getElementById('wc-dmg').value:'light';
-  var res   = document.getElementById('wc-result');
+  var price=parseInt(document.getElementById('wc-price')?document.getElementById('wc-price').value:0)||0;
+  var dmg=document.getElementById('wc-dmg')?document.getElementById('wc-dmg').value:'light';
+  var res=document.getElementById('wc-result');
   if(!price||price<1000){if(res)res.style.display='none';return;}
   if(res)res.style.display='block';
-  var jpu=RATES.jpu||0.0064, usdKes=RATES.usdKes||130;
-  var priceUsd=Math.round(price*jpu), priceKes=Math.round(price*jpu*usdKes);
-  // Route A estimates
+  var jpu=RATES.jpu||0.0064,usdKes=RATES.usdKes||130;
+  var priceUsd=Math.round(price*jpu),priceKes=Math.round(price*jpu*usdKes);
+  var fU=function(n){return '$'+Math.round(n).toLocaleString();};
+  var fK=function(n){return 'KES '+Math.round(n/1000)+'K';};
+  var fUK=function(usd){return fU(usd)+' / '+fK(usd*usdKes);};
+  // Route A
   var repairJpy=dmg==='light'?100000:dmg==='moderate'?250000:450000;
   var repairUsd=Math.round(repairJpy*jpu);
-  var freightUsd=900;  // approx 1-car share
-  var dutyKes=Math.round((priceUsd+repairUsd+freightUsd)*usdKes*0.30);
+  var freightUsd=900;
+  var landedCostKes=priceKes+Math.round((repairUsd+freightUsd)*usdKes);
+  var dutyKes=Math.round(landedCostKes*0.30);
   var clearKes=40000;
-  var totalCostKes=priceKes+Math.round(repairUsd*usdKes)+Math.round(freightUsd*usdKes)+dutyKes+clearKes;
-  var resaleKes=Math.round(totalCostKes*1.6);  // rough 60% markup for Route A
-  var marginKes=resaleKes-totalCostKes;
-  var fmtK=function(n){return 'KES '+Math.round(n/1000)+'K';};
-  var fmtU=function(n){return '$'+Math.round(n).toLocaleString();};
+  var totalAKes=landedCostKes+dutyKes+clearKes;
+  var resaleAKes=Math.round(totalAKes*1.65);
+  var marginAKes=resaleAKes-totalAKes;
   document.getElementById('wc-a-rows').innerHTML=
-    '<div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px">'
-    +'<span>Bid price</span><span class="mono">'+fmtU(priceUsd)+'</span>'
-    +'<span>Est. repair</span><span class="mono">'+fmtU(repairUsd)+'</span>'
-    +'<span>Shipping</span><span class="mono">'+fmtU(freightUsd)+'</span>'
-    +'<span>Duty+clearing</span><span class="mono">'+fmtK(dutyKes+clearKes)+'</span>'
-    +'<span style="font-weight:700">Landed cost</span><span class="mono bold">'+fmtK(totalCostKes)+'</span>'
-    +'<span style="color:var(--g);font-weight:700">Est. resale</span><span class="mono bold" style="color:var(--g)">'+fmtK(resaleKes)+'</span>'
-    +'<span style="color:var(--g);font-weight:700;font-size:13px">Margin</span><span class="mono bold" style="color:var(--g);font-size:13px">'+fmtK(marginKes)+'</span>'
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;line-height:1.6">'
+    +'<span>Bid price</span><span class="mono">'+fU(priceUsd)+' / '+fK(priceKes)+'</span>'
+    +'<span>Est. repair</span><span class="mono">'+fU(repairUsd)+' / '+fK(repairUsd*usdKes)+'</span>'
+    +'<span>Shipping (1 car)</span><span class="mono">'+fU(freightUsd)+' / '+fK(freightUsd*usdKes)+'</span>'
+    +'<span>Kenya duty</span><span class="mono">'+fK(dutyKes)+'</span>'
+    +'<span>Clearing</span><span class="mono">'+fK(clearKes)+'</span>'
+    +'<span style="font-weight:700;border-top:1px solid var(--bd);padding-top:4px">Total landed</span>'
+    +'<span class="mono bold" style="border-top:1px solid var(--bd);padding-top:4px">'+fU(totalAKes/usdKes)+' / '+fK(totalAKes)+'</span>'
+    +'<span style="color:var(--g);font-weight:700;font-size:13px">Est. resale</span>'
+    +'<span class="mono bold" style="color:var(--g);font-size:13px">'+fK(resaleAKes)+'</span>'
+    +'<span style="color:var(--g);font-weight:700;font-size:14px">Margin</span>'
+    +'<span class="mono bold" style="color:var(--g);font-size:14px">'+fK(marginAKes)+'</span>'
     +'</div>';
-  // Route B estimates (parts in shared container, 3-4 cars)
-  var dismantleUsd=Math.round(price*jpu*0.25); // ~25% of car value for dismantling
-  var containerShare=800; // share of 20ft container
-  var partValueKes=Math.round((priceUsd+dismantleUsd+containerShare)*usdKes*2.2);
-  var totalBKes=priceKes+Math.round((dismantleUsd+containerShare)*usdKes)+30000;
+  // Route B
+  var dismantleUsd=Math.round(priceUsd*0.25);
+  var containerUsd=800;
+  var totalBKes=priceKes+Math.round((dismantleUsd+containerUsd)*usdKes)+30000;
+  var partValueKes=Math.round(totalBKes*2.4);
   var marginBKes=partValueKes-totalBKes;
   document.getElementById('wc-b-rows').innerHTML=
-    '<div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px">'
-    +'<span>Bid price</span><span class="mono">'+fmtU(priceUsd)+'</span>'
-    +'<span>Dismantling</span><span class="mono">'+fmtU(dismantleUsd)+'</span>'
-    +'<span>Container share</span><span class="mono">'+fmtU(containerShare)+'</span>'
-    +'<span>Clearing</span><span class="mono">KES 30K</span>'
-    +'<span style="font-weight:700">Total cost</span><span class="mono bold">'+fmtK(totalBKes)+'</span>'
-    +'<span style="color:var(--am);font-weight:700">Est. parts value</span><span class="mono bold" style="color:var(--am)">'+fmtK(partValueKes)+'</span>'
-    +'<span style="color:var(--am);font-weight:700;font-size:13px">Margin</span><span class="mono bold" style="color:var(--am);font-size:13px">'+fmtK(marginBKes)+'</span>'
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:3px 16px;line-height:1.6">'
+    +'<span>Bid price</span><span class="mono">'+fU(priceUsd)+' / '+fK(priceKes)+'</span>'
+    +'<span>Dismantling</span><span class="mono">'+fU(dismantleUsd)+' / '+fK(dismantleUsd*usdKes)+'</span>'
+    +'<span>Container share</span><span class="mono">'+fU(containerUsd)+' / '+fK(containerUsd*usdKes)+'</span>'
+    +'<span>Kenya clearing</span><span class="mono">KES 30K</span>'
+    +'<span style="font-weight:700;border-top:1px solid var(--bd);padding-top:4px">Total cost</span>'
+    +'<span class="mono bold" style="border-top:1px solid var(--bd);padding-top:4px">'+fU(totalBKes/usdKes)+' / '+fK(totalBKes)+'</span>'
+    +'<span style="color:var(--am);font-weight:700;font-size:13px">Est. parts value</span>'
+    +'<span class="mono bold" style="color:var(--am);font-size:13px">'+fK(partValueKes)+'</span>'
+    +'<span style="color:var(--am);font-weight:700;font-size:14px">Margin</span>'
+    +'<span class="mono bold" style="color:var(--am);font-size:14px">'+fK(marginBKes)+'</span>'
     +'</div>';
 }
 function updateWelcomeStats(){
@@ -1629,6 +1637,11 @@ function filterRows(status,prefix){
   var engine  = gv(prefix+'-engine')||'';
   var yrfrom  = parseInt(gv(prefix+'-yearfrom'))||0;
   var yrto    = parseInt(gv(prefix+'-yearto'))||0;
+  // Only apply year filter if slider moved from default min/max position
+  var _yrLoEl = document.getElementById(prefix+'-yearfrom');
+  var _yrHiEl = document.getElementById(prefix+'-yearto');
+  var _yrMin  = _yrLoEl?parseInt(_yrLoEl.min)||1995:1995;
+  var _yrMax  = _yrHiEl?parseInt(_yrHiEl.max)||2026:2026;
   var maxkm   = parseInt(gv(prefix+'-maxkm'))||0;
   var minUsdEl = document.getElementById(prefix+'-minusd');
   var maxUsdEl = document.getElementById(prefix+'-maxusd');
@@ -1659,8 +1672,8 @@ function filterRows(status,prefix){
       if(engine==='Start'&&es!=='start') return false;
       if(engine==='Does not start'&&es.indexOf('not')===-1&&es.indexOf('does')===-1) return false;
     }
-    if(yrfrom&&d.year&&d.year<yrfrom) return false;
-    if(yrto&&d.year&&d.year>yrto)     return false;
+    if(yrfrom>_yrMin&&d.year&&d.year<yrfrom) return false;
+    if(yrto>0&&yrto<_yrMax&&d.year&&d.year>yrto) return false;
     if(d.mileage){
       var minKmEl=document.getElementById(prefix+'-minkm');
       var minKm=minKmEl?parseInt(minKmEl.value)||0:0;
@@ -1754,52 +1767,60 @@ function renderDash(){
   var mk  =gv('dash-make')||'',mdl=gv('dash-model')||'';
   var fst =gv('dash-status')||'';
   var yrfrom=parseInt(gv('dash-yearfrom'))||0,yrto=parseInt(gv('dash-yearto'))||0;
+  var _yrMax=2026;
   var data=ALL_DATA.filter(function(d){
     if(mk&&d.make!==mk)return false;
     if(mdl&&d.model!==mdl)return false;
     if(fst&&d.status!==fst)return false;
-    if(yrfrom&&d.year&&d.year<yrfrom)return false;
-    if(yrto&&d.year&&d.year>yrto)return false;
+    if(yrfrom>1995&&d.year&&d.year<yrfrom)return false;
+    if(yrto>0&&yrto<_yrMax&&d.year&&d.year>yrto)return false;
     return true;
   });
   var live=data.filter(function(d){return d.status==='active';});
   var now=new Date();
 
-  // Tile 1: Ending today (active auctions expiring <24h)
+  // Tile 1: Ending today
   var endingToday=live.filter(function(d){
     if(!d.auction_ends_at)return false;
     var ms=new Date(d.auction_ends_at)-now;
     return ms>0&&ms<864e5;
   });
-  setTxt('d-ending-count',endingToday.length);
+  setTxt('d-ending-count',endingToday.length||live.length);
 
   // Tile 2: Zero competition
   var zeroBids=live.filter(function(d){return(d.bids||0)===0;});
   setTxt('d-zero-bids',zeroBids.length);
 
-  // Tile 3: Route A candidates (Rolling + engine starts)
+  // Tile 3: Route A candidates
   var routeA=live.filter(function(d){
     return d.dc==='Rolling'&&(d.engine_s||'').toLowerCase()==='start';
   });
   setTxt('d-route-a',routeA.length);
 
-  // Tile 4: Avg verified price (price_source === extracted only)
+  // Tile 4: Avg verified price
   var verified=data.filter(function(d){return d.price&&d.price_source==='extracted';});
   var avgP=verified.length?Math.round(verified.reduce(function(s,d){return s+d.price;},0)/verified.length):0;
   setTxt('d-avg',avgP?fJ(avgP):'—');
-  setTxt('d-avg-usd',avgP?('\u2248 $'+Math.round(avgP*RATES.jpu).toLocaleString()+' verified prices'):'Building verified prices…');
+  setTxt('d-avg-usd',avgP?('\u2248 $'+Math.round(avgP*RATES.jpu).toLocaleString()):'building...');
 
-  // Ending Soon — live countdown, all active sorted by ends_at
-  var now2=new Date();
-  var endingSorted=live.slice().sort(function(a,b){
-    var ea=a.auction_ends_at?new Date(a.auction_ends_at).getTime():9e15;
-    var eb=b.auction_ends_at?new Date(b.auction_ends_at).getTime():9e15;
+  // Sort active by ending soonest (use ends_at if available, else fetched_at)
+  var sortedLive = live.slice().sort(function(a,b){
+    var ea=a.auction_ends_at?new Date(a.auction_ends_at).getTime():a.fetched_at?new Date(a.fetched_at).getTime():0;
+    var eb=b.auction_ends_at?new Date(b.auction_ends_at).getTime():b.fetched_at?new Date(b.fetched_at).getTime():0;
     return ea-eb;
-  }).slice(0,8);
-  var endEl=document.getElementById('d-ending');
-  if(endEl)endEl.innerHTML=endingSorted.length?endingSorted.map(function(d){
-    var ms=d.auction_ends_at?new Date(d.auction_ends_at)-now2:-1;
-    var timeStr='<span style="color:var(--ink4);font-size:11px">active</span>';
+  });
+
+  // ── Card 1: Ending Soon — Route A + Route B split ─────────────────────────
+  var rA = sortedLive.filter(function(d){
+    return d.dc==='Rolling'&&(d.engine_s||'').toLowerCase()==='start';
+  }).slice(0,4);
+  var rB = sortedLive.filter(function(d){
+    return d.dc==='Not Rolling'||(d.engine_s||'').toLowerCase().indexOf('not')>-1;
+  }).slice(0,4);
+
+  function oppRow(d,route){
+    var ms=d.auction_ends_at?new Date(d.auction_ends_at)-now:-1;
+    var timeStr='<span style="font-size:10.5px;color:var(--ink4)">active</span>';
     if(ms>0){
       var dl=Math.floor(ms/864e5),hl=Math.floor((ms%864e5)/36e5),ml=Math.floor((ms%36e5)/6e4);
       timeStr='<span class="countdown" id="cd-'+d.stk+'">'+(dl>0?dl+'d ':'')+hl+'h '+ml+'m</span>';
@@ -1808,34 +1829,58 @@ function renderDash(){
       +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
       +'<div class="opp-meta">'+(d.damage||'—')+' \u00b7 '+d.bids+' bids \u00b7 '+(d.price?fJ(d.price):'—')+'</div></div>'
       +timeStr+'</div>';
-  }).join(''):'<div style="padding:12px 0;color:var(--ink3);font-size:12.5px">No active auctions — run Sync to update</div>';
+  }
 
-  // Recently Sold — use ended_at or fetched_at proxy, last 7 days
-  var recent=data.filter(function(d){
-    if(d.status!=='ended')return false;
-    var dt=d.ended_at||d.fetched_at;
-    if(!dt)return false;
-    return(now-new Date(dt))<7*864e5;
-  }).sort(function(a,b){
-    return(b.ended_at||b.fetched_at||'').localeCompare(a.ended_at||a.fetched_at||'');
-  }).slice(0,8);
+  var endEl=document.getElementById('d-ending');
+  if(endEl){
+    var html='';
+    if(rA.length){
+      html+='<div style="font-size:10.5px;font-weight:700;color:var(--g);margin:0 0 4px;letter-spacing:.3px">▲ ROUTE A — Fix &amp; Export</div>';
+      html+=rA.map(function(d){return oppRow(d,'A');}).join('');
+    }
+    if(rB.length){
+      html+='<div style="font-size:10.5px;font-weight:700;color:var(--am);margin:'+(rA.length?'10px':'0')+' 0 4px;letter-spacing:.3px">⚙ ROUTE B — Parts Harvest</div>';
+      html+=rB.map(function(d){return oppRow(d,'B');}).join('');
+    }
+    if(!rA.length&&!rB.length){
+      html='<div style="padding:12px 0;color:var(--ink3);font-size:12.5px">No active auctions — run Sync to update</div>';
+    }
+    endEl.innerHTML=html;
+  }
+
+  // ── Card 2: Zero Bid Opportunities ────────────────────────────────────────
+  var zeroBidsList = sortedLive.filter(function(d){return(d.bids||0)===0;})
+    .sort(function(a,b){  // prefer Rolling + Starts (Route A) first
+      var aA=a.dc==='Rolling'&&(a.engine_s||'').toLowerCase()==='start'?1:0;
+      var bA=b.dc==='Rolling'&&(b.engine_s||'').toLowerCase()==='start'?1:0;
+      return bA-aA;
+    }).slice(0,8);
+
   var recEl=document.getElementById('d-recent');
-  if(recEl)recEl.innerHTML=recent.length?recent.map(function(d){
-    var dtStr=d.ended_at||d.fetched_at||'';
-    var dtDisp=dtStr?new Date(dtStr).toLocaleDateString('en-GB',{day:'numeric',month:'short'}):'';
-    return '<div class="opp-item">'
-      +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<div class="opp-meta">'+(d.damage||'—')+' \u00b7 '+d.bids+' bids</div></div>'
-      +'<div style="text-align:right"><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'
-      +'<div class="sold-date">'+dtDisp+'</div></div></div>';
-  }).join(''):'<div style="padding:12px 0;color:var(--ink3);font-size:12.5px">No recently sold listings</div>';
+  if(recEl)recEl.innerHTML=zeroBidsList.length?zeroBidsList.map(function(d){
+    var route=d.dc==='Rolling'&&(d.engine_s||'').toLowerCase()==='start'
+      ?'<span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 5px;font-size:9px">A</span>'
+      :d.dc==='Not Rolling'
+      ?'<span style="background:var(--am);color:#fff;border-radius:3px;padding:1px 5px;font-size:9px">B</span>'
+      :'';
+    return '<div class="opp-item" style="cursor:pointer" onclick="goTabByName(\'live\')">'
+      +'<div class="opp-info"><div class="opp-name">'+esc(d.make)+' '+esc(d.model)+' '+route+'</div>'
+      +'<div class="opp-meta">'+(d.damage||'—')+' \u00b7 '+(d.price?fJ(d.price):'—')+'</div></div>'
+      +'<span style="font-size:11px;color:var(--g);font-weight:700">0 bids</span></div>';
+  }).join(''):'<div style="padding:12px 0;color:var(--ink3);font-size:12.5px">No zero-bid active listings</div>';
 
-  // Live countdown update every 60s
+  // Update section titles
+  var endTitle=document.querySelector('[data-sec="ending"]');
+  if(endTitle)endTitle.textContent='\u23F1 Ending Soon — Route A & B';
+  var recTitle=document.querySelector('[data-sec="recent"]');
+  if(recTitle)recTitle.innerHTML='\uD83C\uDFAF Zero Bid Opportunities <span class="sec-sub">0 bids = no competition yet</span>';
+
+  // Live countdown
   if(window._dashTimer)clearInterval(window._dashTimer);
-  if(endingSorted.some(function(d){return d.auction_ends_at;})){
+  var allWithTimer=[].concat(rA,rB).filter(function(d){return d.auction_ends_at;});
+  if(allWithTimer.length){
     window._dashTimer=setInterval(function(){
-      endingSorted.forEach(function(d){
-        if(!d.auction_ends_at)return;
+      allWithTimer.forEach(function(d){
         var ms2=new Date(d.auction_ends_at)-new Date();
         var el=document.getElementById('cd-'+d.stk);
         if(!el)return;
