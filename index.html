@@ -527,9 +527,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="live-dmg" onchange="renderLive()"><option value="">Any Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
     <select class="sel" id="live-fuel" onchange="renderLive()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
     <select class="sel" id="live-drv" onchange="renderLive()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
-    <input class="inp" type="number" id="live-yearfrom" placeholder="Year from" oninput="renderLive()" style="width:90px">
-    <input class="inp" type="number" id="live-yearto" placeholder="Year to" oninput="renderLive()" style="width:80px">
-    <input class="inp" type="number" id="live-maxkm" placeholder="Max KM" oninput="renderLive()" style="width:90px">
+    <div class="range-dual" style="min-width:155px"><div class="range-track"><div class="range-fill" id="live-year-fill"></div><input type="range" id="live-yearfrom" min="1995" max="2026" step="1" value="1995" oninput="syncYearRange('live');renderLive()"><input type="range" id="live-yearto" min="1995" max="2026" step="1" value="2026" oninput="syncYearRange('live');renderLive()"></div><div class="range-vals"><span class="rv-lo" id="live-year-lo">1995</span><span class="rv-lbl">Year</span><span class="rv-hi" id="live-year-hi">any</span></div></div>
+    <div class="range-dual" style="min-width:155px"><div class="range-track"><div class="range-fill" id="live-km-fill"></div><input type="range" id="live-minkm" min="0" max="300000" step="10000" value="0" oninput="syncKmRange('live');renderLive()"><input type="range" id="live-maxkm" min="0" max="300000" step="10000" value="300000" oninput="syncKmRange('live');renderLive()"></div><div class="range-vals"><span class="rv-lo" id="live-km-lo">0</span><span class="rv-lbl">KM</span><span class="rv-hi" id="live-km-hi">any</span></div></div>
     <select class="sel" id="live-sort" onchange="renderLive()"><option value="ends_asc">Ending Soonest</option><option value="bids">Most Bids</option><option value="price_asc">Price ↑</option><option value="price_desc">Price ↓</option><option value="year_desc">Year ↓</option></select>
     <div class="range-dual">
     <div class="range-track">
@@ -545,6 +544,9 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
       <span class="rv-hi" id="live-usd-hi">any</span>
     </div>
   </div>
+
+    <button class="btn" style="background:var(--g);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','A')" title="Rolling + Engine Starts">▲ Route A</button>
+    <button class="btn" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" title="Not Rolling or No Start">⚙ Route B</button>
     <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -566,9 +568,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="sold-dmg" onchange="renderSold()"><option value="">Any Damage</option><option value="Front">Front</option><option value="Rear">Rear</option><option value="Left">Left</option><option value="Right">Right</option></select>
     <select class="sel" id="sold-fuel" onchange="renderSold()"><option value="">Any Fuel</option><option>Gasoline</option><option>Diesel</option><option>Hybrid</option></select>
     <select class="sel" id="sold-drv" onchange="renderSold()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
-    <input class="inp" type="number" id="sold-yearfrom" placeholder="Year from" oninput="renderSold()" style="width:90px">
-    <input class="inp" type="number" id="sold-yearto" placeholder="Year to" oninput="renderSold()" style="width:80px">
-    <input class="inp" type="number" id="sold-maxkm" placeholder="Max KM" oninput="renderSold()" style="width:90px">
+    <div class="range-dual" style="min-width:155px"><div class="range-track"><div class="range-fill" id="sold-year-fill"></div><input type="range" id="sold-yearfrom" min="1995" max="2026" step="1" value="1995" oninput="syncYearRange('sold');renderSold()"><input type="range" id="sold-yearto" min="1995" max="2026" step="1" value="2026" oninput="syncYearRange('sold');renderSold()"></div><div class="range-vals"><span class="rv-lo" id="sold-year-lo">1995</span><span class="rv-lbl">Year</span><span class="rv-hi" id="sold-year-hi">any</span></div></div>
+    <div class="range-dual" style="min-width:155px"><div class="range-track"><div class="range-fill" id="sold-km-fill"></div><input type="range" id="sold-minkm" min="0" max="300000" step="10000" value="0" oninput="syncKmRange('sold');renderSold()"><input type="range" id="sold-maxkm" min="0" max="300000" step="10000" value="300000" oninput="syncKmRange('sold');renderSold()"></div><div class="range-vals"><span class="rv-lo" id="sold-km-lo">0</span><span class="rv-lbl">KM</span><span class="rv-hi" id="sold-km-hi">any</span></div></div>
     <select class="sel" id="sold-daterange" onchange="renderSold()"><option value="">Any time</option><option value="7">Sold last 7d</option><option value="14">Last 14d</option><option value="30">Last 30d</option><option value="90">Last 90d</option></select>
     <select class="sel" id="sold-sort" onchange="renderSold()"><option value="ended_desc">Ended ↓ (newest)</option><option value="ended_asc">Ended ↑ (oldest)</option><option value="bids">Most Bids</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="year_desc">Year ↓</option></select>
     <div class="range-dual">
@@ -640,12 +641,12 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
       <span class="rv-hi" id="dt-usd-hi">any</span>
     </div>
   </div>
-    <input class="inp" type="number" id="dt-maxkm" placeholder="Max KM" oninput="renderData()" style="width:90px">
+    <div class="range-dual" style="min-width:155px"><div class="range-track"><div class="range-fill" id="dt-km-fill"></div><input type="range" id="dt-minkm" min="0" max="300000" step="10000" value="0" oninput="syncKmRange('dt');renderData()"><input type="range" id="dt-maxkm" min="0" max="300000" step="10000" value="300000" oninput="syncKmRange('dt');renderData()"></div><div class="range-vals"><span class="rv-lo" id="dt-km-lo">0</span><span class="rv-lbl">KM</span><span class="rv-hi" id="dt-km-hi">any</span></div></div>
     <select class="sel" id="dt-engine" onchange="renderData()"><option value="">Any Engine</option><option value="Start">Starts</option><option value="Does not start">Does Not Start</option></select>
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Body</th><th>Engine</th><th>Fuel</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Body</th><th>Engine</th><th>Fuel</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -760,68 +761,60 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 
 <!-- ═══ SETTINGS ═══ -->
 <div class="tab" id="tab-settings">
-  <div style="background:var(--gbg);border:1px solid var(--gbd);border-radius:var(--rs);padding:10px 14px;margin-bottom:14px;font-size:12.5px;color:var(--g);display:flex;gap:8px">
-    <span>💾</span><div>Settings save to your browser. Changes to rates and duties apply to Container Planner calculations and the currency display across all tabs.</div>
+  <div class="g2">
+    <div>
+      <!-- Exchange Rates -->
+      <div class="card mb12">
+        <div class="sec-title">💱 Exchange Rates</div>
+        <div class="g2" style="gap:10px;margin-top:8px">
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">JPY → USD</div><input class="inp" id="ke-jpu" type="number" step="0.0001" style="width:100%" oninput="updateRates()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">USD → KES</div><input class="inp" id="ke-usdkes" type="number" step="0.01" style="width:100%" oninput="updateRates()"></div>
+        </div>
+        <div style="margin-top:8px;font-size:12px;color:var(--ink3)" id="ke-summary"></div>
+      </div>
+      <!-- Freight & Costs -->
+      <div class="card mb12">
+        <div class="sec-title">🚢 Freight & Default Costs</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:8px">
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Freight / CBM (USD)</div><input class="inp" id="freight-cost" type="number" style="width:100%" oninput="buildFreightRoutes();recalcAll()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Port (USD)</div><input class="inp" id="port-cost" type="number" style="width:100%" oninput="updateSetupSummary();recalcAll()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Clearing (KES)</div><input class="inp" id="shared-clear" type="number" style="width:100%" oninput="updateSetupSummary();recalcAll()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Transport (KES)</div><input class="inp" id="shared-trans" type="number" style="width:100%" oninput="updateSetupSummary();recalcAll()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Labour (KES)</div><input class="inp" id="shared-labour" type="number" style="width:100%" oninput="updateSetupSummary();recalcAll()"></div>
+          <div><div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Premium %</div><input class="inp" id="def-prem" type="number" step="0.5" style="width:100%" oninput="recalcAll()"></div>
+        </div>
+        <div style="margin-top:10px;font-size:12px;color:var(--ink3)" id="setup-summary"></div>
+      </div>
+    </div>
+    <div>
+      <!-- Destination -->
+      <div class="card mb12">
+        <div class="sec-title">📍 Destination Port</div>
+        <select class="sel" id="dest" onchange="buildFreightRoutes();updateCpRatesPill();recalcAll()" style="width:100%;margin-top:8px">
+          <option value="kenya">🇰🇪 Kenya (Mombasa)</option>
+          <option value="uganda">🇺🇬 Uganda (Mombasa→Kampala)</option>
+          <option value="tanzania">🇹🇿 Tanzania (Dar es Salaam)</option>
+        </select>
+      </div>
+      <!-- GitHub Sync Token -->
+      <div class="card mb12">
+        <div class="sec-title">🔑 GitHub Sync Token</div>
+        <div style="font-size:12.5px;color:var(--ink3);margin-bottom:10px">
+          One-time setup. Generate a fine-grained PAT at github.com/settings/tokens
+          with <strong>Actions: Write</strong> on the tau-tracker repo only.
+          Stored in your browser only — never sent anywhere except GitHub.
+        </div>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
+          <input class="inp" type="password" id="gh-token" placeholder="github_pat_…"
+                 style="flex:1;min-width:240px;font-family:monospace;font-size:12px"
+                 oninput="saveGhToken()">
+          <button class="btn bp bsm" onclick="testGhToken()">Test Connection</button>
+          <span id="gh-token-status" style="font-size:12px"></span>
+        </div>
+      </div>
+    </div>
   </div>
-  <div class="set-sec"><div class="set-hdr"><div class="set-title">💱 Exchange Rates</div></div><div class="set-body">
-    <div class="set-row"><div><div class="set-lbl">JPY / USD</div><div class="set-hint">Scraper updates this daily from Frankfurter API</div></div><div class="wu"><input class="set-inp" id="rate-jpy" type="number" value="0.0064" step="0.0001" oninput="updateRates()"><span class="unit">1 JPY =</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">USD / KES</div><div class="set-hint">Will auto-update once KES fetch is in scraper</div></div><div class="wu"><input class="set-inp" id="rate-kes" type="number" value="130" oninput="updateRates()"><span class="unit">1 USD =</span></div></div>
-    <div style="font-size:12.5px;color:var(--ink2);margin-top:10px;padding:9px 11px;background:var(--s2);border-radius:var(--rs)">Current: <strong style="font-family:'DM Mono',monospace" id="rate-disp">¥1 = KES 0.8320</strong> &nbsp;|&nbsp; ¥1,000,000 = <strong style="font-family:'DM Mono',monospace" id="rate-m">KES 832,000</strong></div>
-  </div></div>
-  <div class="set-sec"><div class="set-hdr"><div class="set-title">🏛 Import Duty Rates</div></div><div class="set-body"><div class="duty-grid">
-    <div class="duty-box"><div class="duty-name">🇰🇪 Kenya (KRA)</div>
-      <div class="d-row"><span class="d-key">Import Duty</span><div style="display:flex;align-items:center"><input class="d-inp" id="ke-id" type="number" value="25" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-row"><span class="d-key">VAT</span><div style="display:flex;align-items:center"><input class="d-inp" id="ke-vat" type="number" value="16" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-row"><span class="d-key">IDF</span><div style="display:flex;align-items:center"><input class="d-inp" id="ke-idf" type="number" value="3.5" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-row"><span class="d-key">RDL</span><div style="display:flex;align-items:center"><input class="d-inp" id="ke-rdl" type="number" value="2" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-eff">Effective on CIF: <strong id="ke-eff">—</strong></div>
-    </div>
-    <div class="duty-box"><div class="duty-name">🇦🇪 UAE (Federal)</div>
-      <div class="d-row"><span class="d-key">Import Duty</span><div style="display:flex;align-items:center"><input class="d-inp" id="ae-id" type="number" value="5" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-row"><span class="d-key">VAT</span><div style="display:flex;align-items:center"><input class="d-inp" id="ae-vat" type="number" value="5" oninput="updateDutyEff()"><span class="d-pct">%</span></div></div>
-      <div class="d-eff">Effective on CIF: <strong id="ae-eff">—</strong></div>
-    </div>
-  </div></div></div>
-  <div class="set-sec"><div class="set-hdr"><div class="set-title">💰 Default Costs</div></div><div class="set-body">
-    <div class="set-row"><div><div class="set-lbl">Clearing agent fee</div><div class="set-hint">Per container, split equally</div></div><div class="wu"><input class="set-inp" id="def-clear" type="number" value="12000"><span class="unit">KES</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">Local transport (MBS→NBI)</div><div class="set-hint">Per container truck, split equally</div></div><div class="wu"><input class="set-inp" id="def-trans" type="number" value="28000"><span class="unit">KES</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">Dismantling labour</div><div class="set-hint">Per vehicle at yard</div></div><div class="wu"><input class="set-inp" id="def-labour" type="number" value="8000"><span class="unit">KES</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">Port handling</div><div class="set-hint">Mombasa port, per container</div></div><div class="wu"><input class="set-inp" id="def-port" type="number" value="350"><span class="unit">USD</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">Insurance</div></div><div class="wu"><input class="set-inp" id="def-ins" type="number" value="0.5" step="0.1"><span class="unit">% of goods</span></div></div>
-    <div class="set-row"><div><div class="set-lbl">Default buyer premium</div></div><div class="wu"><input class="set-inp" id="def-prem" type="number" value="5"><span class="unit">%</span></div></div>
-  </div></div>
-  <div class="set-sec"><div class="set-hdr"><div class="set-title">🚢 Freight Routes</div></div><div class="set-body"><div id="freight-routes"></div></div></div>
-  <div class="set-sec"><div class="set-hdr"><div class="set-title">🔧 Parts Price Reference</div><button class="btn bg bsm" onclick="resetParts()">Reset</button></div><div class="set-body"><div style="overflow-x:auto"><table class="pref-tbl" id="pref-tbl"></table></div></div></div>
-  <div class="save-bar"><div class="save-note">Saved to browser storage. Export for backup.</div><div style="display:flex;gap:8px"><button class="btn bg bsm" onclick="exportSettings()">↓ Export</button><button class="btn bp" onclick="saveSettings();showToast('Settings saved','ok')">Save Settings</button></div></div>
 </div>
-
-
-<!-- Global slide-in panel -->
-<div class="panel-backdrop" id="panel-backdrop" onclick="closePanel()"></div>
-<div class="panel-overlay" id="global-panel">
-  <button class="panel-close" onclick="closePanel()">✕ Close</button>
-  <div id="global-panel-empty" class="panel-empty" style="padding-top:60px">
-    <div style="font-size:28px;opacity:.3;margin-bottom:8px">👈</div>
-    <div>Click a listing to see details</div>
-  </div>
-  <div id="global-panel-content"></div>
-</div>
-  <!-- GitHub Sync Token -->
-  <div class="card mb12" style="margin-top:12px">
-    <div class="sec-title">🔑 GitHub Sync Token</div>
-    <div style="font-size:12.5px;color:var(--ink3);margin-bottom:10px">
-      One-time setup. Generate a fine-grained PAT at github.com/settings/tokens with
-      <strong>Actions: Write</strong> permission on the tau-tracker repo only.
-      Stored in your browser only — never sent anywhere except GitHub.
-    </div>
-    <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap">
-      <input class="inp" type="password" id="gh-token" placeholder="github_pat_…"
-             style="flex:1;min-width:240px;font-family:monospace;font-size:12px"
-             oninput="saveGhToken()">
-      <button class="btn bp bsm" onclick="testGhToken()">Test Connection</button>
-      <span id="gh-token-status" style="font-size:12px"></span>
-    </div>
-  </div>
 
 </div><!-- /pg -->
 <script>
@@ -1275,6 +1268,53 @@ function loadGhToken(){
   var el = document.getElementById('gh-token');
   if(el && stored) el.value = stored;
 }
+
+function syncYearRange(prefix){
+  var loEl=document.getElementById(prefix+'-yearfrom');
+  var hiEl=document.getElementById(prefix+'-yearto');
+  if(!loEl||!hiEl)return;
+  var lo=parseInt(loEl.value)||1995, hi=parseInt(hiEl.value)||2026;
+  var mx=parseInt(loEl.max)||2026, mn=parseInt(loEl.min)||1995;
+  if(lo>hi){loEl.value=hi;lo=hi;}
+  var fill=document.getElementById(prefix+'-year-fill');
+  if(fill){fill.style.left=((lo-mn)/(mx-mn)*100)+'%';fill.style.width=((hi-lo)/(mx-mn)*100)+'%';}
+  var loLbl=document.getElementById(prefix+'-year-lo');
+  var hiLbl=document.getElementById(prefix+'-year-hi');
+  if(loLbl)loLbl.textContent=lo;
+  if(hiLbl)hiLbl.textContent=hi>=mx?'any':String(hi);
+}
+function syncKmRange(prefix){
+  var loEl=document.getElementById(prefix+'-minkm');
+  var hiEl=document.getElementById(prefix+'-maxkm');
+  if(!loEl||!hiEl)return;
+  var lo=parseInt(loEl.value)||0, hi=parseInt(hiEl.value)||300000;
+  var mx=parseInt(loEl.max)||300000;
+  if(lo>hi){loEl.value=hi;lo=hi;}
+  var fill=document.getElementById(prefix+'-km-fill');
+  if(fill){fill.style.left=(lo/mx*100)+'%';fill.style.width=((hi-lo)/mx*100)+'%';}
+  var loLbl=document.getElementById(prefix+'-km-lo');
+  var hiLbl=document.getElementById(prefix+'-km-hi');
+  if(loLbl)loLbl.textContent=lo>0?Math.round(lo/1000)+'K':'0';
+  if(hiLbl)hiLbl.textContent=hi>=mx?'any':Math.round(hi/1000)+'K km';
+}
+function applyPreset(prefix, route){
+  // Clear all filters first
+  clearFilters(prefix);
+  if(route==='A'){
+    // Route A: Fix & Export — Rolling condition, engine starts
+    var dc=document.getElementById(prefix+'-dc');
+    var eng=document.getElementById(prefix+'-engine');
+    if(dc)dc.value='Rolling';
+    if(eng)eng.value='Start';
+  } else if(route==='B'){
+    // Route B: Parts Harvest — Not Rolling (primary indicator)
+    var dc=document.getElementById(prefix+'-dc');
+    if(dc)dc.value='Not Rolling';
+  }
+  if(prefix==='live')renderLive();
+  else if(prefix==='sold')renderSold();
+  else if(prefix==='data')renderData();
+}
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
   var q       = (gv(prefix+'-q')||'').toLowerCase();
@@ -1319,7 +1359,14 @@ function filterRows(status,prefix){
     }
     if(yrfrom&&d.year&&d.year<yrfrom) return false;
     if(yrto&&d.year&&d.year>yrto)     return false;
-    if(maxkm&&d.mileage&&d.mileage>maxkm) return false;
+    if(d.mileage){
+      var minKmEl=document.getElementById(prefix+'-minkm');
+      var minKm=minKmEl?parseInt(minKmEl.value)||0:0;
+      var maxKmEl2=document.getElementById(prefix+'-maxkm');
+      var maxKmCap=maxKmEl2?parseInt(maxKmEl2.max)||300000:300000;
+      if(minKm>0&&d.mileage<minKm)return false;
+      if(maxkm<maxKmCap&&d.mileage>maxkm)return false;
+    }
     if(d.price&&RATES.jpu){
       var pUsd=Math.round(d.price*RATES.jpu);
       if(minUsd>0&&pUsd<minUsd)return false;
@@ -1563,11 +1610,12 @@ function hbar(label,val,max,suffix){suffix=suffix||'';return '<div class="hbar-r
       +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:10.5px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
       +'<td class="mono">'+d.bids+'</td>'
       +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button></td>'
+      +'<td><a href="https://www.tau-trade.com/sal_frt/stock/detail?stkNo='+d.stk+'" target="_blank" style="color:var(--bl);font-size:12px">↗ TAU</a></td>'
       +'</tr>';
   }).join('') : '<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--ink4)">No listings match filters</td></tr>';
 }
 function exportCSV(){
-  var cols=['stk','sno','status','make','model','grade','year','mileage','body','fuel','cc','drv','tx','damage','dc','price','bids'];
+  var cols=['stk','sno','status','make','model','grade','year','mileage','body','fuel','cc','drv','tx','damage','dc','price','bids','url'];
   var csv=cols.join(',')+'\n'+ALL_DATA.map(function(d){return cols.map(function(k){var v=d[k]||'';return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');}).join('\n');
   var a=document.createElement('a');a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);a.download='tau-listings.csv';a.click();
   showToast('CSV downloaded','ok');
@@ -2068,6 +2116,7 @@ function init(){
     updateSetupSummary();updateCpRatesPill();
     renderDash();renderLive();renderSold();renderModels();
     ['live','sold','dt'].forEach(function(p){initRange(p);});
+    ['live','sold','dt'].forEach(function(p){syncYearRange(p);syncKmRange(p);});
     loadGhToken();updateSyncStatus();
     renderPanel();
     var rp=document.getElementById('rate-pill');
