@@ -467,6 +467,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 
 <div class="nav-wrap">
   <div class="nav">
+    <button class="nb" onclick="goTab('welcome',this)">👋 Welcome</button>
     <button class="nb on" onclick="goTab('dash',this)">📊 Dashboard</button>
     <button class="nb" onclick="goTab('live',this)">🔴 Active Auctions</button>
     
@@ -482,6 +483,157 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 <div class="toast" id="toast"></div>
 
 <div class="pg">
+
+<!-- ═══ WELCOME ═══ -->
+<div class="tab" id="tab-welcome">
+  <div style="max-width:860px;margin:0 auto;padding:8px 0 40px">
+
+    <!-- Header -->
+    <div style="text-align:center;padding:32px 0 20px">
+      <div style="font-size:36px;font-weight:800;letter-spacing:-1px;color:var(--ink1)">
+        TAU Tracker
+      </div>
+      <div style="font-size:15px;color:var(--ink3);margin-top:6px">
+        Japan damaged-car intelligence for Kenya import arbitrage
+      </div>
+      <div style="display:flex;gap:10px;justify-content:center;margin-top:18px;flex-wrap:wrap">
+        <button class="btn bp" onclick="goTabByName('live')" style="padding:8px 22px;font-size:13px">
+          🔴 View Live Auctions →
+        </button>
+        <button class="btn bg" onclick="goTabByName('dash')" style="padding:8px 22px;font-size:13px">
+          📊 Dashboard
+        </button>
+      </div>
+    </div>
+
+    <!-- What is this -->
+    <div class="card mb12">
+      <div class="sec-title">What is TAU Tracker?</div>
+      <div style="font-size:13px;color:var(--ink2);line-height:1.7;margin-top:8px">
+        TAU Trade (tau-trade.com) is one of Japan's largest damaged-vehicle auction platforms —
+        over 1,000 cars listed daily from crashes, floods, and write-offs.
+        TAU Tracker pulls those listings every morning, enriches them with live exchange rates,
+        and gives you a single workspace to identify, evaluate, and plan import deals from Nairobi.
+      </div>
+      <div style="font-size:13px;color:var(--ink3);margin-top:8px;padding-top:8px;border-top:1px solid var(--bd)">
+        <strong>Data updates daily at 08:00 EAT.</strong>
+        Hit <strong>Sync</strong> (top right) for a manual refresh. Prices shown in ¥ and USD.
+        KES conversions use live rates.
+      </div>
+    </div>
+
+    <!-- Two routes -->
+    <div class="g2 mb12">
+      <!-- Route A -->
+      <div class="card" style="border-left:4px solid var(--g)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:var(--g);color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">▲ ROUTE A</span>
+          <span style="font-weight:700;font-size:14px">Fix &amp; Export</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink2);line-height:1.65">
+          Buy a <strong>lightly damaged, rolling car</strong> at auction.
+          Repair it at a Japanese bodyshop (typically ¥50K–¥300K).
+          Ship it to Mombasa as a single unit. Clear duty and sell in Kenya
+          at significantly above landed cost.
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:var(--rs);font-size:12px">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--ink2)">Illustrative example</div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;color:var(--ink2)">
+            <span>TAU bid price</span><span class="mono">¥350,000 ($2,240)</span>
+            <span>Japan repair</span><span class="mono">¥120,000 ($770)</span>
+            <span>Shipping + CIF</span><span class="mono">$1,100</span>
+            <span>Kenya duty + clearing</span><span class="mono">KES 220,000</span>
+            <span style="font-weight:700">Total landed cost</span><span class="mono bold">≈ KES 800,000</span>
+            <span style="font-weight:700;color:var(--g)">Kenya resale</span><span class="mono bold" style="color:var(--g)">≈ KES 1,500,000</span>
+          </div>
+          <div style="margin-top:8px;font-weight:700;color:var(--g);font-size:13px">Margin ≈ KES 700,000</div>
+        </div>
+        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">
+          <strong>Filter:</strong> Use the <span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 5px;font-size:10px">▲ Route A</span>
+          button on Active Auctions to see all candidates instantly.
+        </div>
+      </div>
+
+      <!-- Route B -->
+      <div class="card" style="border-left:4px solid var(--am)">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+          <span style="background:var(--am);color:#fff;border-radius:4px;padding:3px 10px;font-size:11px;font-weight:700">⚙ ROUTE B</span>
+          <span style="font-weight:700;font-size:14px">Parts Harvest</span>
+        </div>
+        <div style="font-size:12.5px;color:var(--ink2);line-height:1.65">
+          Buy a <strong>heavily damaged car — not rolling</strong>.
+          Dismantle it in Japan: engine, gearbox, body panels, hybrid battery.
+          Load a 20ft container and ship to Mombasa.
+          Sell individual parts through Peach's existing network.
+        </div>
+        <div style="margin-top:12px;padding:10px;background:var(--s2);border-radius:var(--rs);font-size:12px">
+          <div style="font-weight:700;margin-bottom:6px;color:var(--ink2)">Illustrative example</div>
+          <div style="display:grid;grid-template-columns:1fr auto;gap:2px 12px;color:var(--ink2)">
+            <span>TAU bid price (x8 cars)</span><span class="mono">¥800,000 ($5,100)</span>
+            <span>Dismantling labour</span><span class="mono">¥200,000 ($1,280)</span>
+            <span>20ft container freight</span><span class="mono">$3,200</span>
+            <span>Kenya clearing</span><span class="mono">KES 85,000</span>
+            <span style="font-weight:700">Total cost</span><span class="mono bold">≈ KES 1,500,000</span>
+            <span style="font-weight:700;color:var(--am)">Parts resale value</span><span class="mono bold" style="color:var(--am)">≈ KES 3,200,000</span>
+          </div>
+          <div style="margin-top:8px;font-weight:700;color:var(--am);font-size:13px">Margin ≈ KES 1,700,000</div>
+        </div>
+        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">
+          <strong>Filter:</strong> Use the <span style="background:var(--am);color:#fff;border-radius:3px;padding:1px 5px;font-size:10px">⚙ Route B</span>
+          button on Active Auctions. Use Container Planner for exact P&amp;L.
+        </div>
+      </div>
+    </div>
+
+    <!-- Quick calculator -->
+    <div class="card mb12">
+      <div class="sec-title">⚡ Quick Estimate</div>
+      <div style="font-size:12.5px;color:var(--ink3);margin-bottom:12px">
+        Enter a TAU bid price to see a rough margin estimate for each route.
+        Use the <strong>Container Planner</strong> for a full deal model.
+      </div>
+      <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;margin-bottom:14px">
+        <div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">TAU Bid Price (¥)</div>
+          <input class="inp" type="number" id="wc-price" placeholder="e.g. 300000"
+                 oninput="calcWelcome()" style="width:150px;font-size:14px">
+        </div>
+        <div>
+          <div style="font-size:11px;color:var(--ink3);margin-bottom:4px">Damage Level</div>
+          <select class="sel" id="wc-dmg" onchange="calcWelcome()" style="width:140px">
+            <option value="light">Light (rolling)</option>
+            <option value="moderate">Moderate</option>
+            <option value="heavy">Heavy (not rolling)</option>
+          </select>
+        </div>
+      </div>
+      <div id="wc-result" style="display:none">
+        <div class="g2" style="gap:10px">
+          <div style="padding:12px;background:var(--s2);border-radius:var(--rs);border-left:3px solid var(--g)">
+            <div style="font-size:11px;font-weight:700;color:var(--g);margin-bottom:8px">▲ ROUTE A — Fix &amp; Export</div>
+            <div id="wc-a-rows" style="font-size:12px;color:var(--ink2)"></div>
+          </div>
+          <div style="padding:12px;background:var(--s2);border-radius:var(--rs);border-left:3px solid var(--am)">
+            <div style="font-size:11px;font-weight:700;color:var(--am);margin-bottom:8px">⚙ ROUTE B — Parts Harvest</div>
+            <div id="wc-b-rows" style="font-size:12px;color:var(--ink2)"></div>
+          </div>
+        </div>
+        <div style="font-size:11px;color:var(--ink4);margin-top:10px">
+          ⚠ Estimates only. Actual costs vary by make, model, damage, and market conditions.
+          Use Container Planner for a full deal model.
+        </div>
+      </div>
+    </div>
+
+    <!-- Tool status -->
+    <div style="display:flex;gap:20px;flex-wrap:wrap;padding:10px 14px;background:var(--s2);border-radius:var(--rs);font-size:12px;color:var(--ink3)">
+      <div>📊 <strong id="wc-total">—</strong> listings tracked</div>
+      <div>🔴 <strong id="wc-active">—</strong> live auctions</div>
+      <div>📅 <strong>Updated daily at 08:00 EAT</strong></div>
+      <div>🛠 Work in progress — prices auto-correct within 7 days of first run</div>
+    </div>
+  </div>
+</div>
 
 <!-- ═══ DASHBOARD ═══ -->
 <div class="tab on" id="tab-dash">
@@ -565,6 +717,11 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <button class="btn" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" title="Not Rolling or No Start">⚙ Route B</button>
     <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
   </div>
+  <div style="display:flex;gap:20px;flex-wrap:wrap;padding:4px 2px 8px;font-size:12px;color:var(--ink3)">
+    <div><span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;margin-right:5px">▲ Route A</span>Rolling + Engine Starts — light repair in Japan, export to Kenya for resale</div>
+    <div><span style="background:var(--am);color:#fff;border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;margin-right:5px">⚙ Route B</span>Not Rolling / No Start — dismantle in Japan, ship parts by container to Kenya</div>
+  </div>
+  <div style="font-size:11px;color:var(--ink3);padding:3px 2px 6px"><span style="color:var(--g);font-weight:700">▲ Route A</span> Fix &amp; Export — Rolling condition, engine starts &nbsp;·&nbsp; <span style="color:var(--am);font-weight:700">⚙ Route B</span> Parts Harvest — Not Rolling or engine damaged</div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
     <tbody id="live-tbody"></tbody>
@@ -671,7 +828,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Fuel</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Drive</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -937,6 +1094,7 @@ function goTab(name,btn){
   document.querySelectorAll('.nb').forEach(function(b){b.classList.remove('on');});
   var t=document.getElementById('tab-'+name);if(t)t.classList.add('on');
   if(btn)btn.classList.add('on');
+  if(name==='welcome'){}  // static page — no render needed
   if(name==='dash')   renderDash();
   if(name==='live')   renderLive();
   if(name==='sold')   renderSold();
@@ -1403,6 +1561,61 @@ function buildModelDrilldown(listings,make,model){
     +'</table></div>'
     +'</div>';
 }
+
+function calcWelcome(){
+  var price = parseInt(document.getElementById('wc-price')?document.getElementById('wc-price').value:0)||0;
+  var dmg   = document.getElementById('wc-dmg')?document.getElementById('wc-dmg').value:'light';
+  var res   = document.getElementById('wc-result');
+  if(!price||price<1000){if(res)res.style.display='none';return;}
+  if(res)res.style.display='block';
+  var jpu=RATES.jpu||0.0064, usdKes=RATES.usdKes||130;
+  var priceUsd=Math.round(price*jpu), priceKes=Math.round(price*jpu*usdKes);
+  // Route A estimates
+  var repairJpy=dmg==='light'?100000:dmg==='moderate'?250000:450000;
+  var repairUsd=Math.round(repairJpy*jpu);
+  var freightUsd=900;  // approx 1-car share
+  var dutyKes=Math.round((priceUsd+repairUsd+freightUsd)*usdKes*0.30);
+  var clearKes=40000;
+  var totalCostKes=priceKes+Math.round(repairUsd*usdKes)+Math.round(freightUsd*usdKes)+dutyKes+clearKes;
+  var resaleKes=Math.round(totalCostKes*1.6);  // rough 60% markup for Route A
+  var marginKes=resaleKes-totalCostKes;
+  var fmtK=function(n){return 'KES '+Math.round(n/1000)+'K';};
+  var fmtU=function(n){return '$'+Math.round(n).toLocaleString();};
+  document.getElementById('wc-a-rows').innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px">'
+    +'<span>Bid price</span><span class="mono">'+fmtU(priceUsd)+'</span>'
+    +'<span>Est. repair</span><span class="mono">'+fmtU(repairUsd)+'</span>'
+    +'<span>Shipping</span><span class="mono">'+fmtU(freightUsd)+'</span>'
+    +'<span>Duty+clearing</span><span class="mono">'+fmtK(dutyKes+clearKes)+'</span>'
+    +'<span style="font-weight:700">Landed cost</span><span class="mono bold">'+fmtK(totalCostKes)+'</span>'
+    +'<span style="color:var(--g);font-weight:700">Est. resale</span><span class="mono bold" style="color:var(--g)">'+fmtK(resaleKes)+'</span>'
+    +'<span style="color:var(--g);font-weight:700;font-size:13px">Margin</span><span class="mono bold" style="color:var(--g);font-size:13px">'+fmtK(marginKes)+'</span>'
+    +'</div>';
+  // Route B estimates (parts in shared container, 3-4 cars)
+  var dismantleUsd=Math.round(price*jpu*0.25); // ~25% of car value for dismantling
+  var containerShare=800; // share of 20ft container
+  var partValueKes=Math.round((priceUsd+dismantleUsd+containerShare)*usdKes*2.2);
+  var totalBKes=priceKes+Math.round((dismantleUsd+containerShare)*usdKes)+30000;
+  var marginBKes=partValueKes-totalBKes;
+  document.getElementById('wc-b-rows').innerHTML=
+    '<div style="display:grid;grid-template-columns:1fr auto;gap:2px 16px">'
+    +'<span>Bid price</span><span class="mono">'+fmtU(priceUsd)+'</span>'
+    +'<span>Dismantling</span><span class="mono">'+fmtU(dismantleUsd)+'</span>'
+    +'<span>Container share</span><span class="mono">'+fmtU(containerShare)+'</span>'
+    +'<span>Clearing</span><span class="mono">KES 30K</span>'
+    +'<span style="font-weight:700">Total cost</span><span class="mono bold">'+fmtK(totalBKes)+'</span>'
+    +'<span style="color:var(--am);font-weight:700">Est. parts value</span><span class="mono bold" style="color:var(--am)">'+fmtK(partValueKes)+'</span>'
+    +'<span style="color:var(--am);font-weight:700;font-size:13px">Margin</span><span class="mono bold" style="color:var(--am);font-size:13px">'+fmtK(marginBKes)+'</span>'
+    +'</div>';
+}
+function updateWelcomeStats(){
+  var total=ALL_DATA.length;
+  var active=ALL_DATA.filter(function(d){return d.status==='active';}).length;
+  var wt=document.getElementById('wc-total');
+  var wa=document.getElementById('wc-active');
+  if(wt)wt.textContent=total;
+  if(wa)wa.textContent=active;
+}
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
   var q       = (gv(prefix+'-q')||'').toLowerCase();
@@ -1419,9 +1632,10 @@ function filterRows(status,prefix){
   var maxkm   = parseInt(gv(prefix+'-maxkm'))||0;
   var minUsdEl = document.getElementById(prefix+'-minusd');
   var maxUsdEl = document.getElementById(prefix+'-maxusd');
-  var minUsd = minUsdEl?parseInt(minUsdEl.value)||0:0;
-  var maxUsd = maxUsdEl?parseInt(maxUsdEl.value)||20000:20000;
-  var maxUsdCap = maxUsdEl?parseInt(maxUsdEl.max)||20000:20000;
+  var minUsd    = minUsdEl&&minUsdEl.value?parseInt(minUsdEl.value):0;
+  var maxUsdCap = maxUsdEl&&maxUsdEl.max  ?parseInt(maxUsdEl.max)  :20000;
+  var maxUsd    = maxUsdEl&&maxUsdEl.value?parseInt(maxUsdEl.value):maxUsdCap;
+  if(isNaN(minUsd))minUsd=0; if(isNaN(maxUsd))maxUsd=maxUsdCap;
   var dateRng = parseInt(gv(prefix+'-daterange'))||0;
   var fst     = status||gv(prefix+'-status')||'';
 
@@ -1729,36 +1943,49 @@ function hbar(label,val,max,suffix){suffix=suffix||'';return '<div class="hbar-r
   tb.innerHTML = rows.length ? rows.map(function(d){
     var usd = d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
     var eng = (d.engine_s||'').trim()||'—';
+    var engCls = eng==='Start'?'color:var(--g)':eng.toLowerCase().indexOf('not')>-1?'color:var(--rd)':'';
+    var sb  = d.status==='active'?'b-live':d.status==='upcoming'?'b-warn':'b-sold';
+    var sl  = d.status==='active'?'LIVE':d.status==='upcoming'?'SOON':'SOLD';
     return '<tr>'
       +'<td class="mono" style="font-size:11px">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
-      +'<td><span class="badge '+(d.status==='active'?'b-live':d.status==='upcoming'?'b-warn':'b-sold')+'">'+(d.status==='active'?'ACTIVE':d.status==='upcoming'?'SOON':'SOLD')+'</span></td>'
-      +'<td class="bold">'+esc(d.make)+'</td>'
-      +'<td class="bold">'+esc(d.model)+'</td>'
-      +'<td style="font-size:11px;color:var(--ink2)">'+esc(d.grade||'')+'</td>'
+      +'<td><div class="bold" style="font-size:12.5px">'+esc(d.make)+' '+esc(d.model)+'</div>'
+      +'<span class="badge '+sb+'" style="font-size:9.5px">'+sl+'</span></td>'
+      +'<td class="grade-cell" style="max-width:130px" title="'+esc(d.grade||'')+'">'+esc(d.grade||'—')+'</td>'
       +'<td class="mono">'+(d.year||'—')+'</td>'
       +'<td class="mono">'+(d.mileage?d.mileage.toLocaleString():'—')+'</td>'
-      +'<td style="font-size:12px">'+esc(eng)+'</td>'
-      +'<td style="font-size:11.5px">'+esc(d.fuel||'')+'</td>'
+      +'<td style="font-size:12px;'+engCls+'">'+esc(eng)+'</td>'
       +'<td style="font-size:11.5px">'+(d.damage||'—')+'</td>'
       +'<td><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'">'+esc(d.dc||'—')+'</span></td>'
       +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:10.5px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
-      +'<td class="mono">'+d.bids+'</td>'
-      +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+ Batch</button></td>'
-      +'<td><a href="https://www.tau-trade.com/sal_frt/stock/detail?stkNo='+d.stk+'" target="_blank" style="color:var(--bl);font-size:12px">↗ TAU</a></td>'
+      +'<td class="mono bold" style="color:'+( d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink2)')+'">'+d.bids+'</td>'
+      +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+Batch</button></td>'
+      +'<td><a href="'+d.url+'" target="_blank" style="color:var(--bl);font-size:13px">↗</a></td>'
       +'</tr>';
-  }).join('') : '<tr><td colspan="16" style="text-align:center;padding:24px;color:var(--ink4)">No listings match filters</td></tr>';
+  }).join('') : '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--ink4)">No listings match</td></tr>';
 }
 function exportCSV(){
-  var cols=['stk','sno','status','make','model','grade','year','mileage','fuel','cc','tx','damage','dc','price','bids','url'];
-  var rows=filterRows('','dt');   // respects active filters — if no filter = all data
-  var csv=cols.join(',')+'\\n'+rows.map(function(d){
-    return cols.map(function(k){var v=d[k]||'';return '"'+String(v).replace(/"/g,'""')+'"';}).join(',');
-  }).join('\\n');
+  var cols=['stk','sno','status','make','model','grade','year','mileage','fuel','damage','dc','price','bids','url'];
+  var rows=ALL_DATA;
+  // Try filtered subset; fall back to all data if filterRows can't run
+  try{
+    var filtered=filterRows('','dt');
+    if(filtered&&filtered.length>=0)rows=filtered;
+  }catch(e){}
+  if(!rows.length){showToast('No data to export','warn');return;}
+  var NL='\n';  // explicit newline
+  var csv=cols.join(',')+NL+rows.map(function(d){
+    return cols.map(function(k){
+      var v=d[k]===undefined||d[k]===null?'':d[k];
+      return '"'+String(v).replace(/"/g,'""')+'"';
+    }).join(',');
+  }).join(NL);
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+  var url=URL.createObjectURL(blob);
   var a=document.createElement('a');
-  a.href='data:text/csv;charset=utf-8,'+encodeURIComponent(csv);
-  a.download='tau-listings-'+(rows.length)+'.csv';
-  a.click();
-  showToast('Downloaded '+rows.length+' listings as CSV','ok');
+  a.href=url; a.download='tau-'+rows.length+'-listings.csv';
+  document.body.appendChild(a); a.click();
+  document.body.removeChild(a); URL.revokeObjectURL(url);
+  showToast('Downloaded '+rows.length+' listings','ok');
 }
 
 /* ─── MAKE FILTER POPULATION ─── */
@@ -2254,7 +2481,7 @@ function init(){
     document.getElementById('shared-labour').value=gv('def-labour')||8000;
     buildFreightRoutes();buildPartsRef();updateDutyEff();updateRates();
     updateSetupSummary();updateCpRatesPill();
-    renderDash();renderLive();renderSold();renderModels();
+    renderDash();renderLive();renderSold();renderModels();updateWelcomeStats();
     ['live','sold','dt'].forEach(function(p){initRange(p);});
     ['live','sold','dt','mod'].forEach(function(p){syncYearRange(p);syncKmRange(p);});
     loadGhToken();updateSyncStatus();
