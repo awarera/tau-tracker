@@ -6,7 +6,7 @@ on:
   workflow_dispatch:       # manual trigger from Actions tab
 
 permissions:
-  contents: write          # needed to commit data/ back to repo
+  contents: write
 
 jobs:
   scrape:
@@ -24,6 +24,7 @@ jobs:
 
       - name: Run scraper
         run: python scraper.py
+        continue-on-error: true   # partial fetch failures are normal — always commit what we got
 
       - name: Commit updated data files
         run: |
