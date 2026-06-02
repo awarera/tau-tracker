@@ -542,6 +542,80 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   .tbl-wrap{ -webkit-overflow-scrolling:touch }
   .opp-item{ flex-wrap:wrap; gap:4px }
 }
+
+/* ─── iOS SAFARI RANGE SLIDER FIXES ─── */
+input[type=range]{
+  -webkit-appearance:none;
+  appearance:none;
+  background:transparent;
+  outline:none;
+}
+input[type=range]::-webkit-slider-runnable-track{
+  height:4px;
+  background:transparent;
+}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;
+  appearance:none;
+  width:20px;
+  height:20px;
+  border-radius:50%;
+  background:var(--peach);
+  cursor:pointer;
+  border:2px solid white;
+  box-shadow:0 1px 4px rgba(0,0,0,.25);
+  margin-top:-8px;
+}
+input[type=range]::-moz-range-thumb{
+  width:18px;
+  height:18px;
+  border-radius:50%;
+  background:var(--peach);
+  border:2px solid white;
+  cursor:pointer;
+}
+input[type=range]::-moz-range-track{
+  height:4px;
+  background:transparent;
+}
+
+/* ─── IMPROVED MOBILE FILTER BAR ─── */
+@media(max-width:430px){
+  /* iPhone 15 / 14 Pro — 393px viewport */
+  .fbar{gap:5px}
+  .fbar .sel{
+    font-size:13px;
+    padding:7px 8px;
+    min-height:40px;  /* iOS recommended touch target */
+  }
+  .fbar .inp{
+    font-size:13px;
+    padding:8px 10px;
+    min-height:40px;
+  }
+  .range-dual{
+    min-width:calc(50% - 8px);
+    flex:1;
+  }
+  .range-dual input[type=range]{
+    height:36px;   /* larger touch target on mobile */
+  }
+  .range-dual input[type=range]::-webkit-slider-thumb{
+    width:24px;
+    height:24px;
+    margin-top:-10px;
+  }
+  .fbar-reset{
+    min-height:44px;
+    font-size:14px;
+  }
+  /* Collapse less-used selects to be narrower */
+  #live-fuel, #live-drv, #sold-fuel, #sold-drv{
+    font-size:12px;
+  }
+  /* Hide ★ Save on very small screens (accessible via scroll) */
+  .preset-bar{ display:none !important }
+}
 </style>
 </head>
 <body>
@@ -772,7 +846,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 <!-- ═══ ACTIVE AUCTIONS ═══ -->
 <div class="tab" id="tab-live">
   <div class="fbar">
-    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="live-q" placeholder="Search make, model, grade…" oninput="renderLive()"></div>
+    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="live-q" placeholder="Search make, model, stock no…" oninput="renderLive()"></div>
     <select class="sel" id="live-make" onchange="renderLive();syncModelFilter('live')"><option value="">All Makes</option></select>
     <select class="sel" id="live-model" onchange="renderLive()"><option value="">All Models</option></select>
     <select class="sel" id="live-body" onchange="renderLive()"><option value="">All Types</option><option>SUV</option><option>KeiCar-RV</option><option>MV&amp;1Box</option><option>Hatch</option><option>Sedan</option></select>
@@ -883,7 +957,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('dt')">★ Save</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
   </div>
   <div class="fbar" style="margin-bottom:12px">
-    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="dt-q" placeholder="Search any field…" oninput="renderData()"></div>
+    <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="dt-q" placeholder="Search make, model, stock no…" oninput="renderData()"></div>
     <select class="sel" id="dt-make" onchange="syncModelFilter('dt');renderData()"><option value="">All Makes</option></select>
     <select class="sel" id="dt-model" onchange="renderData()"><option value="">All Models</option></select>
     <select class="sel" id="dt-status" onchange="renderData()"><option value="">All Status</option><option value="active">Live</option><option value="ended">Sold</option><option value="upcoming">Upcoming</option></select>
@@ -1966,7 +2040,7 @@ function filterRows(status,prefix){
       var dt = d[dateField]?new Date(d[dateField]):null;
       if(!dt||dt<cutoff) return false;
     }
-    if(q&&(d.make+' '+d.model+' '+d.grade+' '+(d.damage||'')+' '+(d.fuel||'')+' '+(d.drv||'')).toLowerCase().indexOf(q)===-1) return false;
+    if(q&&(d.make+' '+d.model+' '+d.grade+' '+(d.damage||'')+' '+(d.fuel||'')+' '+(d.drv||'')+' '+(d.sno||'')+' '+(d.stk||'')).toLowerCase().indexOf(q)===-1) return false;
     return true;
   });
 }
