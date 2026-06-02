@@ -6,9 +6,7 @@
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>TAU Tracker — Peach Cars Intelligence</title>
 <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
-<style>
-
-:root{
+<style>:root{
   color-scheme:light;
   --peach:#F33A6A;--pd:#D42255;--p10:rgba(243,58,106,.08);--p20:rgba(243,58,106,.18);
   --bg:#FAFAF8;--wh:#FFF;--s2:#F6F4F1;--s3:#EEECEA;
@@ -329,308 +327,76 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 .mb12{margin-bottom:12px}.mb8{margin-bottom:8px}
 .txt-muted{color:var(--ink3);font-size:12px}
 .frout-row{display:grid;grid-template-columns:1fr 100px 55px 60px;gap:9px;align-items:center;margin-bottom:8px}
-@media(max-width:960px){.layout-split,.cp-layout{grid-template-columns:1fr}.cp-right,.panel{position:static}.g4,.g3{grid-template-columns:1fr 1fr}.vinputs{grid-template-columns:1fr 1fr}}
-@media(max-width:640px){.g4,.g3,.g2,.g21{grid-template-columns:1fr}.vinputs{grid-template-columns:1fr}.duty-grid,.vd-grid,.set-row{grid-template-columns:1fr}.setup-row{flex-direction:column}}
-
-
-/* Container Planner step strip */
-.calc-steps{display:flex;align-items:center;gap:6px;padding:10px 16px;background:var(--wh);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:12px;box-shadow:var(--sh)}
-.cstep{font-size:12px;font-weight:600;color:var(--ink4);padding:5px 10px;border-radius:var(--rs);cursor:pointer;transition:.15s;display:flex;align-items:center;gap:5px}
-.cstep:hover{background:var(--s2);color:var(--ink2)}
-.cstep.active{background:var(--p10);color:var(--peach)}
-.cstep.done{color:var(--g)}
-.cstep-sep{color:var(--bd2);font-size:14px;flex-shrink:0}
-/* Rates pill */
-.cp-rates-pill{display:flex;align-items:center;flex-wrap:wrap;gap:10px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);padding:8px 14px;margin-bottom:12px;font-size:12px;cursor:pointer;transition:.15s}
-.cp-rates-pill:hover{background:var(--s3);border-color:var(--bd2)}
-.cp-rates-pill strong{font-family:'DM Mono',monospace}
-/* Setup card (collapsible) */
-.setup-card{background:var(--wh);border:1px solid var(--bd);border-radius:var(--r);margin-bottom:14px;box-shadow:var(--sh);overflow:hidden}
-.setup-toggle{display:flex;align-items:center;justify-content:space-between;padding:11px 16px;cursor:pointer;user-select:none}
-.setup-toggle:hover{background:var(--s2)}
-.setup-toggle-left{display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;color:var(--ink)}
-.setup-toggle-right{display:flex;align-items:center;gap:10px}
-.setup-toggle-summary{font-size:11.5px;color:var(--ink3);font-family:'DM Mono',monospace}
-.setup-toggle-chevron{font-size:11px;color:var(--ink4)}
-.setup-inner{padding:12px 16px;border-top:1px solid var(--bd);display:none}
-/* Simplified vehicle card */
-.vrow-hdr-main{display:flex;align-items:center;gap:8px;flex:1;min-width:0;cursor:pointer}
-.vrow-quick{display:flex;align-items:center;gap:7px;flex-shrink:0}
-.vbid-wrap{display:flex;align-items:center;gap:4px;flex-shrink:0}
-.vbid-lbl{font-size:10px;color:var(--ink3);white-space:nowrap}
-.vbid-inp{width:100px;background:var(--bg);border:1.5px solid var(--bd);border-radius:var(--rs);padding:5px 7px;font-family:'DM Mono',monospace;font-size:12.5px;color:var(--ink);outline:none;text-align:right}
-.vbid-inp:focus{border-color:var(--peach)}
-.vdism-sel{background:var(--wh);border:1px solid var(--bd);border-radius:var(--rs);padding:5px 20px 5px 7px;font-family:inherit;font-size:11.5px;color:var(--ink);outline:none;cursor:pointer;appearance:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%235A6478' stroke-width='1.5' stroke-linecap='round' fill='none'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 6px center;max-width:130px}
-.vdism-sel:focus{border-color:var(--peach)}
-
-
-/* Slide-in panel overlay */
-.panel-overlay{position:fixed;top:54px;right:0;width:400px;height:calc(100vh - 54px);
-  overflow-y:auto;background:var(--wh);border-left:1px solid var(--bd);
-  box-shadow:-4px 0 24px rgba(0,0,0,.12);z-index:260;
-  transform:translateX(100%);transition:transform .25s cubic-bezier(.4,0,.2,1)}
-.panel-overlay.open{transform:translateX(0)}
-.panel-backdrop{position:fixed;top:54px;left:0;right:0;bottom:0;
-  background:rgba(0,0,0,.18);z-index:259;display:none;cursor:pointer}
-.panel-backdrop.open{display:block}
-.panel-close{position:absolute;top:12px;right:14px;background:var(--s2);
-  border:1px solid var(--bd);border-radius:var(--rs);padding:3px 10px;
-  font-size:11.5px;font-weight:600;color:var(--ink3);cursor:pointer;font-family:inherit}
-.panel-close:hover{background:var(--s3);color:var(--ink)}
-.layout-single{overflow-x:auto}
-
-
-/* Inline accordion panel (replaces side panel) */
-.detail-expand>td{padding:0!important;border-top:2px solid var(--peach)!important;border-bottom:2px solid var(--peach)!important}
-.pi{display:grid;grid-template-columns:repeat(4,1fr);gap:0;background:var(--s2);border-left:3px solid var(--peach)}
-.pi-sec{padding:14px 16px;border-right:1px solid var(--bd)}
-.pi-sec:last-child{border-right:none}
-.pi-stitle{font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
-.pi-price{font-family:'DM Mono',monospace;font-size:19px;font-weight:500;color:var(--ink);margin-bottom:3px}
-.pi-row{display:flex;justify-content:space-between;padding:3.5px 0;border-bottom:1px solid var(--bd);font-size:12px;gap:8px}
-.pi-row:last-child{border-bottom:none}
-.pi-k{color:var(--ink3);flex-shrink:0}.pi-v{font-weight:500;text-align:right;color:var(--ink2)}
-@media(max-width:900px){.pi{grid-template-columns:1fr 1fr}}
-@media(max-width:560px){.pi{grid-template-columns:1fr}}
-/* Table layout fix — prevent grade column from stretching layout */
-.tbl-wrap{overflow-x:auto;max-width:100%}
-table{width:100%;table-layout:auto}
-.grade-cell{max-width:150px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Ensure .pg never overflows */
-.pg{overflow-x:hidden}
-
-
-/* Inline row detail expansion */
-.row-det{background:var(--s2)}
-.row-det td{padding:0;border-bottom:2px solid var(--bd2)}
-.row-det-inner{padding:14px 20px;display:grid;grid-template-columns:1fr 1fr 1fr;gap:20px}
-.det-sec-title{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:var(--ink3);margin-bottom:8px;padding-bottom:5px;border-bottom:1px solid var(--bd)}
-/* Table full-width, grade column constrained */
-.tbl-wrap{overflow-x:auto;border-radius:var(--r);border:1px solid var(--bd);background:var(--wh)}
-td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* No more side panel on listing tabs — full width */
-.listing-layout{width:100%}
-/* Dashboard filter bar */
-.dash-fbar{display:flex;gap:8px;flex-wrap:wrap;align-items:center;padding:10px 14px;background:var(--s2);border:1px solid var(--bd);border-radius:var(--rs);margin-bottom:14px}
-/* Ending soon countdown */
-.countdown{font-family:'DM Mono',monospace;font-size:11px;color:var(--peach);font-weight:600}
-/* Recently sold date */
-.sold-date{font-size:10.5px;color:var(--ink3)}
-
 
 /* Analytics chart grid responsive */
-@media(max-width:1100px){
-  .tab#tab-analytics .g3{grid-template-columns:1fr 1fr}
-  .tab#tab-analytics .g3 [style*="grid-column:span 2"]{grid-column:span 2}
-}
-@media(max-width:700px){
-  .tab#tab-analytics .g3{grid-template-columns:1fr}
-  .tab#tab-analytics .g3 [style*="grid-column:span 2"]{grid-column:span 1}
-}
-/* Prevent page overflow on all tabs */
-.pg{overflow-x:hidden}
-.fbar{overflow-x:visible}
 
+/* ═══════════════════════════════════════════════════
+   DUAL-RANGE SLIDER — single authoritative definition
+   ═══════════════════════════════════════════════════ */
+/* Grey background track line */
+/* Coloured selection fill */
+/* Both range inputs overlap, fully transparent */
+.range-dual /* Enable pointer events on thumb only */
+.range-dual /* Hide native track */
+.range-dual .range-dual /* Thumb */
+.range-dual .range-dual /* Labels row */
 
-/* Dual-thumb USD price range slider */
-.range-dual{display:flex;flex-direction:column;gap:2px;min-width:175px;padding:4px 2px 2px}
-.range-track{position:relative;height:4px;background:var(--bd);border-radius:2px;margin:8px 6px 2px}
+/* ═══════════════════════════════════════════════════
+   MOBILE — iPhone / small screens (≤ 430px)
+   ═══════════════════════════════════════════════════ */
+
+/* ═══ DUAL-RANGE SLIDER (single source of truth) ═══ */
+.range-dual{display:flex;flex-direction:column;gap:2px;min-width:155px;flex:1;padding:4px 2px 2px}
+.range-track{position:relative;height:4px;background:var(--bd);border-radius:2px;margin:10px 6px 2px}
 .range-fill{position:absolute;height:100%;background:var(--peach);border-radius:2px;pointer-events:none}
-.range-dual input[type="range"]{position:absolute;top:-5px;left:0;width:100%;height:14px;
-  background:transparent;-webkit-appearance:none;appearance:none;pointer-events:none;margin:0;padding:0}
-.range-dual input[type="range"]::-webkit-slider-thumb{-webkit-appearance:none;width:14px;height:14px;
-  border-radius:50%;background:var(--peach);border:2px solid var(--wh);
-  box-shadow:0 1px 3px rgba(0,0,0,.25);cursor:pointer;pointer-events:all}
-.range-dual input[type="range"]::-moz-range-thumb{width:12px;height:12px;border-radius:50%;
-  background:var(--peach);border:2px solid var(--wh);cursor:pointer;pointer-events:all;border:none}
+.range-dual input[type=range]{position:absolute;top:-7px;left:0;width:100%;height:18px;background:transparent;-webkit-appearance:none;appearance:none;outline:none;margin:0;padding:0;pointer-events:none;z-index:2}
+.range-dual input[type=range]::-webkit-slider-thumb{pointer-events:all;-webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:var(--peach);border:2.5px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.22);cursor:pointer}
+.range-dual input[type=range]::-moz-range-thumb{pointer-events:all;width:14px;height:14px;border-radius:50%;background:var(--peach);border:2.5px solid #fff;cursor:pointer}
+.range-dual input[type=range]::-webkit-slider-runnable-track{height:0;background:transparent}
+.range-dual input[type=range]::-moz-range-track{height:0;background:transparent}
 .range-vals{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
-.range-vals .rv-lo,.range-vals .rv-hi{font-size:10.5px;font-weight:600;
-  color:var(--peach);font-family:'DM Mono',monospace}
-.range-vals .rv-lbl{font-size:10px;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px}
+.rv-lo,.rv-hi{font-size:10.5px;font-weight:600;color:var(--peach);white-space:nowrap;min-width:28px;font-family:'DM Mono',monospace}
+.rv-hi{text-align:right}
+.rv-lbl{font-size:10px;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px;flex:1;text-align:center}
 
+/* ═══ MOBILE ≤ 480px ═══ */
+@media(max-width:480px){
+  /* NAV — horizontal scroll, no wrap */
+  .nav{overflow-x:auto;flex-wrap:nowrap !important;-webkit-overflow-scrolling:touch;padding:4px 8px;gap:2px;scrollbar-width:none}
+  .nav::-webkit-scrollbar{display:none}
+  .nb{white-space:nowrap;font-size:11px;padding:5px 10px;flex-shrink:0}
 
-/* ─── Market Intel drill-down cards ─── */
-.drill-card{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 14px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .1s}
-.drill-card:hover{background:var(--s1)}
-.drill-card:last-child{border-bottom:none}
-.drill-left{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap;min-width:0}
-.drill-right{display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap}
-.drill-list{max-height:400px;overflow-y:auto}
+  /* HEADER */
+  .hdr{gap:4px;padding:5px 10px}
+  .hdr-rates{font-size:10.5px;white-space:nowrap}
 
-.preset-bar{display:none;align-items:center;gap:6px;padding:4px 0 6px;flex-wrap:wrap}
+  /* FILTER BAR — ordered logical groups */
+  .fbar{flex-wrap:wrap;gap:5px;align-items:stretch}
+  .fbar-reset{order:-999 !important;flex-basis:100%;padding:10px 0;font-size:14px;font-weight:700;border-radius:10px;margin-bottom:2px}
+  .fbar .fsrch{order:0;flex-basis:100%}
+  .fbar select[id$="-make"]{order:1;flex:1;min-width:0}
+  .fbar select[id$="-model"]{order:2;flex:1;min-width:0}
+  .fbar select[id$="-dc"]{order:3;flex:1;min-width:0}
+  .fbar select[id$="-engine"]{order:4;flex:1;min-width:0}
+  .fbar .range-dual{order:5;flex:1;min-width:calc(50% - 4px)}
+  .fbar select[id$="-sort"]{order:6;flex:1;min-width:0}
+  .fbar select[id$="-status"]{order:6;flex:1;min-width:0}
+  .fbar select[id$="-body"],.fbar select[id$="-dmg"],.fbar select[id$="-fuel"],.fbar select[id$="-drv"]{order:7;flex:1;min-width:calc(33% - 4px);font-size:11.5px}
+  .fbar .btn:not(.fbar-reset){order:8}
+  .fbar .sel,.fbar .inp{min-height:42px;font-size:13px;border-radius:8px}
 
-/* ─── MOBILE RESPONSIVE ─── */
-@media(max-width:768px){
-  .nav{padding:4px 8px;gap:4px}
-  .nb{font-size:11px;padding:4px 8px}
-  .hdr{flex-wrap:wrap;gap:4px;padding:6px 10px}
-  .hdr-rates{font-size:11px}
-  .sync-btn{padding:4px 10px;font-size:11.5px}
+  /* SLIDER — same visual style, bigger thumb + touch area for mobile */
+  .range-dual input[type=range]{height:30px;top:-13px}
+  .range-dual input[type=range]::-webkit-slider-thumb{width:22px;height:22px}
+  .range-dual input[type=range]::-moz-range-thumb{width:20px;height:20px}
+  .range-track{margin:14px 6px 2px}
+
+  /* LAYOUT */
   .g4{grid-template-columns:1fr 1fr}
   .g2{grid-template-columns:1fr}
-  .card{padding:12px}
-  .fbar{gap:4px;padding:4px 0}
-  .fbar .inp,.fbar .sel{font-size:12px}
   .tbl-wrap{-webkit-overflow-scrolling:touch}
-  .tile{padding:12px 10px}
-  .tval{font-size:22px}
-  .drill-right{gap:6px}
-  input[type=range]{height:28px}
-  .sec-title{font-size:13px}
-  .opp-item{flex-wrap:wrap;gap:6px}
+  .opp-item{flex-wrap:wrap;gap:4px}
   .preset-bar{flex-wrap:wrap}
-  #tab-welcome .g2{grid-template-columns:1fr}
-}
-@media(max-width:480px){
-  .nb{font-size:10px;padding:3px 6px}
-  .g4{grid-template-columns:1fr 1fr}
-  .tval{font-size:19px}
-  .hdr-title{font-size:14px}
-}
-
-/* Route A/B button active state and tooltip */
-.route-btn{position:relative}
-.route-btn.route-active{outline:2px solid rgba(255,255,255,0.9);outline-offset:1px;filter:brightness(1.15)}
-
-/* ─── Preset button CSS tooltip ─── */
-.preset-btn{position:relative}
-.preset-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
-  transform:translateX(-50%);background:var(--ink1);color:var(--wh);padding:6px 10px;
-  border-radius:5px;font-size:11.5px;font-weight:400;line-height:1.45;white-space:normal;
-  width:230px;text-align:center;opacity:0;pointer-events:none;transition:opacity .15s;z-index:300}
-.preset-btn:hover::after{opacity:1}
-.preset-btn::before{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;
-  transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink1);
-  opacity:0;pointer-events:none;transition:opacity .15s;z-index:300}
-.preset-btn:hover::before{opacity:1}
-/* Drill-down table compact */
-.drill-tr td{padding:5px 6px}
-
-/* ─── MOBILE FILTER IMPROVEMENTS ─── */
-@media(max-width:768px){
-  .fbar-reset{
-    order:-999 !important;
-    width:100%;
-    margin-bottom:8px;
-    padding:8px 0;
-    font-size:13px;
-    font-weight:600;
-    border-radius:8px;
-  }
-  .fbar .sel{ font-size:12.5px; min-width:0 }
-  .fbar .inp{ font-size:12.5px }
-  .range-dual{ min-width:140px; flex:1 }
-  .hdr{ gap:6px; padding:6px 10px }
-  .hdr-rates{ font-size:10.5px; white-space:nowrap }
-  .nav{
-    overflow-x:auto;
-    flex-wrap:nowrap !important;
-    -webkit-overflow-scrolling:touch;
-    padding:4px 8px;
-    gap:2px;
-    scrollbar-width:none;
-  }
-  .nav::-webkit-scrollbar{ display:none }
-  .nb{
-    white-space:nowrap;
-    font-size:11px;
-    padding:5px 10px;
-    flex-shrink:0;
-  }
-  .g4{ grid-template-columns:1fr 1fr }
-  .g2{ grid-template-columns:1fr }
-  .tbl-wrap{ -webkit-overflow-scrolling:touch }
-  .opp-item{ flex-wrap:wrap; gap:4px }
-}
-
-/* ─── iOS SAFARI RANGE SLIDER FIXES ─── */
-input[type=range]{
-  -webkit-appearance:none;
-  appearance:none;
-  background:transparent;
-  outline:none;
-}
-input[type=range]::-webkit-slider-runnable-track{
-  height:4px;
-  background:transparent;
-}
-input[type=range]::-webkit-slider-thumb{
-  -webkit-appearance:none;
-  appearance:none;
-  width:20px;
-  height:20px;
-  border-radius:50%;
-  background:var(--peach);
-  cursor:pointer;
-  border:2px solid white;
-  box-shadow:0 1px 4px rgba(0,0,0,.25);
-  margin-top:-8px;
-}
-input[type=range]::-moz-range-thumb{
-  width:18px;
-  height:18px;
-  border-radius:50%;
-  background:var(--peach);
-  border:2px solid white;
-  cursor:pointer;
-}
-input[type=range]::-moz-range-track{
-  height:4px;
-  background:transparent;
-}
-
-/* ─── IMPROVED MOBILE FILTER BAR ─── */
-@media(max-width:430px){
-  /* iPhone 15 / 14 Pro — 393px viewport */
-  .fbar{gap:5px}
-  .fbar .sel{
-    font-size:13px;
-    padding:7px 8px;
-    min-height:40px;  /* iOS recommended touch target */
-  }
-  .fbar .inp{
-    font-size:13px;
-    padding:8px 10px;
-    min-height:40px;
-  }
-  .range-dual{
-    min-width:calc(50% - 8px);
-    flex:1;
-  }
-  .range-dual input[type=range]{
-    height:36px;   /* larger touch target on mobile */
-  }
-  .range-dual input[type=range]::-webkit-slider-thumb{
-    width:24px;
-    height:24px;
-    margin-top:-10px;
-  }
-  .fbar-reset{
-    min-height:44px;
-    font-size:14px;
-  }
-  /* Collapse less-used selects to be narrower */
-  #live-fuel, #live-drv, #sold-fuel, #sold-drv{
-    font-size:12px;
-  }
-  /* Hide ★ Save on very small screens (accessible via scroll) */
-  .preset-bar{ display:none !important }
-}
-
-/* ─── SLIDER VALUE LABELS — mobile fix ─── */
-.range-dual{display:flex;flex-direction:column;min-width:140px;gap:0}
-.range-track{position:relative;height:28px;display:flex;align-items:center}
-.range-vals{
-  display:flex;justify-content:space-between;align-items:center;
-  padding:0 2px;margin-top:1px;
-}
-.rv-lo,.rv-hi{font-size:11px;font-weight:600;color:var(--peach);white-space:nowrap;min-width:28px}
-.rv-hi{text-align:right}
-.rv-lbl{font-size:10px;color:var(--ink4);text-align:center;flex:1}
-@media(max-width:430px){
-  .rv-lo,.rv-hi{font-size:11.5px}
-  .rv-lbl{font-size:10.5px}
-  .range-dual{min-width:130px}
 }
 </style>
 </head>
