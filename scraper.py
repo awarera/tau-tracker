@@ -317,47 +317,32 @@ def parse_listing(stk, html, existing=None):
 def discover_stknos(max_pages, known_stks=None):
     """
     Paginate TAU search results collecting stkNo hashes.
-
-    Stopping rules (whichever comes first):
-      1. Page fetch fails
-      2. Page returns 0 stknos not already seen in this run  (end of TAU pagination)
-      3. 3 consecutive pages where every stk is already in known_stks (DB already up to date)
-
-    Rule 3 means daily runs stop after ~3-5 pages once the DB is fully populated.
-    Rule 2 ensures a full first-pass discovers everything TAU has.
+    Crawls all pages until TAU has no more results (added == 0).
+    known_stks used only for logging — does NOT cause early exit,
+    because TAU may sort by auction end time (soonest-ending on
+    last pages), so new listings can appear anywhere in pagination.
     """
     found, seen = [], set()
-    known     = known_stks or set()
-    base      = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}'
-    consec_known = 0   # consecutive pages with 0 stks new to DB
-    print(f"  Crawling up to {max_pages} search pages (smart-stop enabled)…")
+    known = known_stks or set()
+    base  = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}'
+    print(f"  Crawling all TAU pages (up to {max_pages} max)…")
     for page in range(1, max_pages + 1):
         html = fetch_html(base.format(p=page))
         if not html:
             print(f"  Page {page}: fetch failed — stopping")
             break
         stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
-        added       = 0   # new to seen set (dedup within this run)
-        new_to_db   = 0   # genuinely new to our database
+        added      = 0
+        new_to_db  = 0
         for stk in stks:
             if stk not in seen:
                 seen.add(stk); found.append(stk); added += 1
                 if stk not in known:
                     new_to_db += 1
-        print(f"  Page {page:>3}: {added:>3} unique  {new_to_db:>3} new-to-DB  "
-              f"(total found {len(found)})")
-        # Rule 2 — end of TAU's listing pages
+        print(f"  Page {page:>3}: {added:>3} stks  {new_to_db:>3} new  ({len(found)} total)")
         if added == 0 and page > 2:
-            print("  End of TAU pages — stopping")
+            print("  End of TAU pages — done")
             break
-        # Rule 3 — all stks on this page already in DB → count toward early-exit
-        if new_to_db == 0:
-            consec_known += 1
-            if consec_known >= 3:
-                print(f"  3 consecutive fully-known pages — DB is current, stopping")
-                break
-        else:
-            consec_known = 0
         time.sleep(REQUEST_DELAY * 0.4)
     return found
 
