@@ -436,29 +436,18 @@ def main():
                 delta  = f" (+{updated['bids']-prev_bids})" if updated['bids'] > prev_bids else ''
                 change = f" → {updated['status']}" if updated['status'] != prev_status else ''
             else:
-                # Page unavailable — infer status from timing data
+                # Page unavailable — only mark ended if auction_ends_at has passed
                 listing_now = by_stk[listing['stk']]
                 ends_str    = listing_now.get('auction_ends_at', '')
-                listed_str  = listing_now.get('listed_at', '')
-                marked_ended = False
                 if ends_str:
                     try:
                         if datetime.fromisoformat(ends_str) < datetime.now(timezone.utc):
                             listing_now['status'] = 'ended'
                             if 'ended_at' not in listing_now:
                                 listing_now['ended_at'] = now_iso
-                            print(f"  → ended (past auction time) {listing_now.get('make','')} {listing_now.get('model','')}")
-                            marked_ended = True
+                            print(f"  → ended (past {ends_str[:10]}) {listing_now.get('make','')} {listing_now.get('model','')}")
                     except Exception: pass
-                if not marked_ended and listed_str:
-                    try:
-                        age_days = (datetime.now(timezone.utc) - datetime.fromisoformat(listed_str)).days
-                        if age_days > 14:
-                            listing_now['status'] = 'ended'
-                            if 'ended_at' not in listing_now:
-                                listing_now['ended_at'] = now_iso
-                            print(f"  → ended (>{age_days}d old, page unavailable) {listing_now.get('make','')}")
-                    except Exception: pass
+                # If no auction_ends_at or it hasn't passed, leave status unchanged
                 print(f"  ↻ {updated.get('make',''):<8} {updated.get('model',''):<12} "
                       f"{updated['bids']:>3}b{delta}{change}")
             checked += 1
