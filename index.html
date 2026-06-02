@@ -448,6 +448,45 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   color:var(--peach);font-family:'DM Mono',monospace}
 .range-vals .rv-lbl{font-size:10px;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px}
 
+
+/* ─── Market Intel drill-down cards ─── */
+.drill-card{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:7px 14px;border-bottom:1px solid var(--bd);cursor:pointer;transition:background .1s}
+.drill-card:hover{background:var(--s1)}
+.drill-card:last-child{border-bottom:none}
+.drill-left{display:flex;align-items:center;gap:6px;flex:1;flex-wrap:wrap;min-width:0}
+.drill-right{display:flex;align-items:center;gap:8px;flex-shrink:0;white-space:nowrap}
+.drill-list{max-height:400px;overflow-y:auto}
+
+.preset-bar{display:none;align-items:center;gap:6px;padding:4px 0 6px;flex-wrap:wrap}
+
+/* ─── MOBILE RESPONSIVE ─── */
+@media(max-width:768px){
+  .nav{padding:4px 8px;gap:4px}
+  .nb{font-size:11px;padding:4px 8px}
+  .hdr{flex-wrap:wrap;gap:4px;padding:6px 10px}
+  .hdr-rates{font-size:11px}
+  .sync-btn{padding:4px 10px;font-size:11.5px}
+  .g4{grid-template-columns:1fr 1fr}
+  .g2{grid-template-columns:1fr}
+  .card{padding:12px}
+  .fbar{gap:4px;padding:4px 0}
+  .fbar .inp,.fbar .sel{font-size:12px}
+  .tbl-wrap{-webkit-overflow-scrolling:touch}
+  .tile{padding:12px 10px}
+  .tval{font-size:22px}
+  .drill-right{gap:6px}
+  input[type=range]{height:28px}
+  .sec-title{font-size:13px}
+  .opp-item{flex-wrap:wrap;gap:6px}
+  .preset-bar{flex-wrap:wrap}
+  #tab-welcome .g2{grid-template-columns:1fr}
+}
+@media(max-width:480px){
+  .nb{font-size:10px;padding:3px 6px}
+  .g4{grid-template-columns:1fr 1fr}
+  .tval{font-size:19px}
+  .hdr-title{font-size:14px}
+}
 </style>
 </head>
 <body>
@@ -715,7 +754,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 
     <button class="btn" style="background:var(--g);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','A')" title="Rolling + Engine Starts">▲ Route A</button>
     <button class="btn" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" title="Not Rolling or No Start">⚙ Route B</button>
-    <button class="btn bg bsm" onclick="clearFilters('live')">✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('live')">
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('live')">★ Save</button>✕ Clear</button>
   </div>
   <div style="display:flex;gap:20px;flex-wrap:wrap;padding:4px 2px 8px;font-size:12px;color:var(--ink3)">
     <div><span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;margin-right:5px">▲ Route A</span>Rolling + Engine Starts — light repair in Japan, export to Kenya for resale</div>
@@ -759,7 +799,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
       <span class="rv-hi" id="sold-usd-hi">any</span>
     </div>
   </div>
-    <button class="btn bg bsm" onclick="clearFilters('sold')">✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('sold')">
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('sold')">★ Save</button>✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
@@ -783,7 +824,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="mod-drv" onchange="renderModels()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
     <select class="sel" id="mod-status" onchange="renderModels()"><option value="">All Status</option><option value="active">Has Live</option><option value="ended">Sold Only</option></select>
     <select class="sel" id="mod-sort" onchange="renderModels()"><option value="count">Most Listings</option><option value="bids">Most Bids</option><option value="price">Highest Avg Price</option></select>
-    <button class="btn bg bsm" onclick="clearFilters('mod')">✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('mod')">
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('mod')">★ Save</button>✕ Clear</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Make / Model</th><th>Listings</th><th>Active</th><th>Avg Price ¥ / USD</th><th>Avg Bids</th><th>Price Range ¥</th><th>Top Damage</th><th>Typical DC</th></tr></thead>
@@ -796,7 +838,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 <div class="tab" id="tab-data">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div class="sec-title" style="margin-bottom:0">Raw Data <span class="sec-sub" id="data-count"></span></div>
-    <div style="display:flex;gap:7px"><button class="btn bg bsm" onclick="clearFilters('dt')">✕ Clear</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
+    <div style="display:flex;gap:7px"><button class="btn bg bsm" onclick="clearFilters('dt')">
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('dt')">★ Save</button>✕ Clear</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
   </div>
   <div class="fbar" style="margin-bottom:12px">
     <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="dt-q" placeholder="Search any field…" oninput="renderData()"></div>
@@ -828,7 +871,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Status</th><th>Make</th><th>Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -1329,19 +1372,28 @@ function tRow(d,scope){
 function toggleRow(stk,scope){
   var detId='det-'+stk;
   var existing=document.getElementById(detId);
-  // Close any open detail rows
   document.querySelectorAll('.row-det').forEach(function(r){r.remove();});
   document.querySelectorAll('.trow').forEach(function(r){r.classList.remove('sel-row');});
-  if(existing)return; // was open — just closed it
+  if(existing)return;
   var d=ALL_DATA.find(function(x){return x.stk===stk;});
   if(!d)return;
+  // Find row by data-stk (works for both <tr> and <div> rows)
   var row=document.querySelector('[data-stk="'+stk+'"]');
   if(!row)return;
   row.classList.add('sel-row');
-  var cols=99;
-  var det=document.createElement('tr');
-  det.id=detId;det.className='row-det';
-  det.innerHTML='<td colspan="'+cols+'">'+buildDetailInline(d)+'</td>';
+  var inner=buildDetailInline(d);
+  var det;
+  // Use <tr><td> for table context, <div> for flex/card context
+  if(row.closest('table')){
+    det=document.createElement('tr');
+    det.id=detId; det.className='row-det';
+    det.innerHTML='<td colspan="99">'+inner+'</td>';
+  }else{
+    det=document.createElement('div');
+    det.id=detId; det.className='row-det';
+    det.innerHTML=inner;
+    det.style.cssText='border-bottom:2px solid var(--peach)';
+  }
   row.parentNode.insertBefore(det,row.nextSibling);
 }
 function buildDetailInline(d){
@@ -1481,22 +1533,40 @@ function syncKmRange(prefix){
   if(hiLbl)hiLbl.textContent=hi>=mx?'any':Math.round(hi/1000)+'K km';
 }
 function applyPreset(prefix, route){
-  // Clear all filters first
-  clearFilters(prefix);
+  // Reset all inputs without triggering render
+  ['q','make','model','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e)e.value='';
+  });
+  var loUsd=document.getElementById(prefix+'-minusd');
+  var hiUsd=document.getElementById(prefix+'-maxusd');
+  if(loUsd)loUsd.value=0;
+  if(hiUsd)hiUsd.value=parseInt(hiUsd.max)||20000;
+  syncRange(prefix);
+  var yrLo=document.getElementById(prefix+'-yearfrom');
+  var yrHi=document.getElementById(prefix+'-yearto');
+  if(yrLo)yrLo.value=parseInt(yrLo.min)||1995;
+  if(yrHi)yrHi.value=parseInt(yrHi.max)||2026;
+  syncYearRange(prefix);
+  var kmLo=document.getElementById(prefix+'-minkm');
+  var kmHi=document.getElementById(prefix+'-maxkm');
+  if(kmLo)kmLo.value=0;
+  if(kmHi)kmHi.value=parseInt(kmHi.max)||300000;
+  syncKmRange(prefix);
+  // Apply route filters
   if(route==='A'){
-    // Route A: Fix & Export — Rolling condition, engine starts
-    var dc=document.getElementById(prefix+'-dc');
-    var eng=document.getElementById(prefix+'-engine');
-    if(dc)dc.value='Rolling';
-    if(eng)eng.value='Start';
+    var dcA=document.getElementById(prefix+'-dc');
+    var engA=document.getElementById(prefix+'-engine');
+    if(dcA) dcA.value='Rolling';
+    if(engA)engA.value='Start';
   } else if(route==='B'){
-    // Route B: Parts Harvest — Not Rolling (primary indicator)
-    var dc=document.getElementById(prefix+'-dc');
-    if(dc)dc.value='Not Rolling';
+    var dcB=document.getElementById(prefix+'-dc');
+    if(dcB)dcB.value='Not Rolling';
   }
-  if(prefix==='live')renderLive();
-  else if(prefix==='sold')renderSold();
-  else if(prefix==='data')renderData();
+  // Single render
+  if(prefix==='live')      renderLive();
+  else if(prefix==='sold') renderSold();
+  else if(prefix==='data') renderData();
 }
 
 function toggleModelRow(make, model){
@@ -1527,37 +1597,49 @@ function buildModelDrilldown(listings,make,model){
   var prices=listings.filter(function(d){return d.price;}).map(function(d){return d.price;});
   var avgPrice=prices.length?Math.round(prices.reduce(function(a,b){return a+b;},0)/prices.length):0;
   var maxBids=listings.reduce(function(m,d){return Math.max(m,d.bids||0);},0);
-  var rowsHtml=listings.map(function(d){
+  var cardsHtml=listings.map(function(d){
     var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
     var eng=(d.engine_s||'').trim();
-    var engCls=eng==='Start'?'color:var(--g)':eng&&eng.toLowerCase().indexOf('not')>-1?'color:var(--rd)':'';
-    return '<tr class="trow" onclick="toggleRow(\''+d.stk+'\',\'models\')">'
-      +'<td class="mono" style="font-size:11px">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
-      +'<td><span class="badge '+(d.status==='active'?'b-live':'b-sold')+'">'+(d.status==='active'?'ACTIVE':'SOLD')+'</span></td>'
-      +'<td style="font-size:11px;color:var(--ink3)">'+esc(d.grade||'—')+'</td>'
-      +'<td class="mono">'+(d.year||'—')+'</td>'
-      +'<td class="mono">'+(d.mileage?d.mileage.toLocaleString()+'km':'—')+'</td>'
-      +'<td style="font-size:12px;'+engCls+'">'+(eng||'—')+'</td>'
-      +'<td><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'">'+esc(d.dc||'—')+'</span></td>'
-      +'<td><div class="mono bold">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:11px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
-      +'<td class="mono bold" style="color:'+( d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink2)')+'">'+d.bids+'</td>'
-      +'<td onclick="event.stopPropagation()"><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+Batch</button></td>'
-      +'<td onclick="event.stopPropagation()"><a href="'+d.url+'" target="_blank" style="color:var(--bl);font-size:12px">↗</a></td>'
-      +'</tr>';
+    var isStart=eng.toLowerCase()==='start';
+    var engColor=isStart?'var(--g)':eng?'var(--rd)':'var(--ink3)';
+    var isRouteA=d.dc==='Rolling'&&isStart;
+    var isRouteB=d.dc==='Not Rolling';
+    var routeBadge=isRouteA
+      ?'<span style="background:var(--g);color:#fff;border-radius:3px;padding:0 5px;font-size:9.5px;font-weight:700">A</span>'
+      :isRouteB
+      ?'<span style="background:var(--am);color:#fff;border-radius:3px;padding:0 5px;font-size:9.5px;font-weight:700">B</span>'
+      :'';
+    var statusBadge='<span class="badge '+(d.status==='active'?'b-live':'b-sold')+'" style="font-size:9.5px;flex-shrink:0">'+(d.status==='active'?'LIVE':'SOLD')+'</span>';
+    var dcBadge='<span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'" style="font-size:9.5px">'+esc(d.dc||'—')+'</span>';
+    var kmStr=d.mileage?Math.round(d.mileage/1000)+'K km':'—';
+    var meta=esc(d.grade||'—')+' · '+(d.year||'—')+' · '+kmStr;
+    var bidsColor=d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink3)';
+    return '<div class="drill-card trow" data-stk="'+d.stk+'" onclick="toggleRow(\''+d.stk+'\',\'models\')">'
+      +'<div class="drill-left">'
+        +statusBadge+routeBadge
+        +'<span style="font-size:11.5px;color:var(--ink2)">'+meta+'</span>'
+        +'<span style="font-size:11.5px;color:'+engColor+';font-weight:600">'+esc(eng||'—')+'</span>'
+        +dcBadge
+      +'</div>'
+      +'<div class="drill-right">'
+        +(d.price?'<span class="mono bold" style="font-size:12px">'+fJ(d.price)+'</span>':'<span style="color:var(--ink4)">—</span>')
+        +(usd?'<span style="font-size:11px;color:var(--bl)">'+usd+'</span>':'')
+        +'<span style="font-size:11.5px;font-weight:600;color:'+bidsColor+'">'+d.bids+' bids</span>'
+        +'<button class="btn bp bxs" onclick="event.stopPropagation();addToBatch(\''+d.stk+'\')" style="font-size:10.5px;padding:2px 7px">+Batch</button>'
+        +'<a href="'+(d.url||'#')+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--bl);font-size:13px;text-decoration:none">↗</a>'
+      +'</div>'
+      +'</div>';
   }).join('');
-  return '<div style="padding:12px 16px;background:var(--s2)">'
-    +'<div style="display:flex;gap:20px;margin-bottom:10px;flex-wrap:wrap;align-items:center">'
-    +'<div style="font-weight:700;font-size:13px">'+esc(make)+' '+esc(model)+'</div>'
-    +'<div style="font-size:11.5px;color:var(--ink3)">'+listings.length+' total</div>'
+  return '<div style="background:var(--s2);border-top:2px solid var(--bd)">'
+    +'<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 16px 6px;border-bottom:1px solid var(--bd)">'
+    +'<span style="font-weight:700;font-size:13px">'+esc(make)+' '+esc(model)+'</span>'
     +'<span class="badge b-live">'+active+' active</span>'
     +'<span class="badge b-sold">'+ended+' sold</span>'
-    +(avgPrice?'<div class="mono bold" style="font-size:12px">Avg '+fJ(avgPrice)+'</div>':'')
-    +(maxBids?'<div style="font-size:11.5px;color:var(--am)">Peak '+maxBids+' bids</div>':'')
+    +(avgPrice?'<span class="mono bold" style="font-size:12px">Avg '+fJ(avgPrice)+'</span>':'')
+    +(maxBids?'<span style="font-size:11.5px;color:var(--am)">Peak '+maxBids+' bids</span>':'')
+    +'<span style="font-size:11.5px;color:var(--ink3)">'+listings.length+' total · click row for full detail</span>'
     +'</div>'
-    +'<div class="tbl-wrap" style="overflow-x:auto;border-radius:var(--rs);border:1px solid var(--bd)"><table>'
-    +'<thead><tr><th style="min-width:72px">Stock</th><th>Status</th><th style="min-width:120px">Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>DC</th><th>Price ¥/USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>'
-    +'<tbody>'+rowsHtml+'</tbody>'
-    +'</table></div>'
+    +'<div class="drill-list">'+cardsHtml+'</div>'
     +'</div>';
 }
 
@@ -1623,6 +1705,139 @@ function updateWelcomeStats(){
   var wa=document.getElementById('wc-active');
   if(wt)wt.textContent=total;
   if(wa)wa.textContent=active;
+}
+
+/* ─── FILTER PERSISTENCE (7a) ─── */
+var _FILTER_KEYS=['q','make','model','body','dc','dmg','fuel','drv','engine','sort','status','daterange'];
+var _SLIDER_KEYS=['minusd','maxusd','yearfrom','yearto','minkm','maxkm'];
+
+function saveFilterState(prefix){
+  var state={};
+  _FILTER_KEYS.forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e)state[k]=e.value||'';
+  });
+  _SLIDER_KEYS.forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e)state[k]=e.value;
+  });
+  try{localStorage.setItem('tau_fs_'+prefix,JSON.stringify(state));}catch(e){}
+}
+
+function restoreFilterState(prefix){
+  try{
+    var stored=localStorage.getItem('tau_fs_'+prefix);
+    if(!stored)return false;
+    var state=JSON.parse(stored);
+    // Restore non-model selects first
+    ['q','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
+      var e=document.getElementById(prefix+'-'+k);
+      if(e&&state[k]!==undefined)e.value=state[k];
+    });
+    // Make → then sync model dropdown → then restore model
+    var mkEl=document.getElementById(prefix+'-make');
+    if(mkEl&&state.make!==undefined)mkEl.value=state.make;
+    if(state.make)syncModelFilter(prefix);
+    var mdlEl=document.getElementById(prefix+'-model');
+    if(mdlEl&&state.model!==undefined)mdlEl.value=state.model;
+    // Restore sliders
+    _SLIDER_KEYS.forEach(function(k){
+      var e=document.getElementById(prefix+'-'+k);
+      if(e&&state[k]!==undefined)e.value=state[k];
+    });
+    syncRange(prefix);syncYearRange(prefix);syncKmRange(prefix);
+    return true;
+  }catch(e){return false;}
+}
+
+/* ─── NAMED PRESETS (7b) ─── */
+function saveNamedPreset(prefix){
+  var name=(prompt('Name this preset:','')||'').trim();
+  if(!name)return;
+  var state={};
+  _FILTER_KEYS.forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e)state[k]=e.value||'';
+  });
+  _SLIDER_KEYS.forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e)state[k]=e.value;
+  });
+  var key='tau_presets_'+prefix;
+  var existing=[];
+  try{existing=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
+  existing.push({id:Date.now(),name:name,state:state});
+  try{localStorage.setItem(key,JSON.stringify(existing));}catch(e){}
+  renderPresetBar(prefix);
+  showToast('"'+name+'" saved','ok');
+}
+
+function renderPresetBar(prefix){
+  var key='tau_presets_'+prefix;
+  var presets=[];
+  try{presets=JSON.parse(localStorage.getItem(key)||'[]');}catch(e){}
+  var barId=prefix+'-preset-bar';
+  var bar=document.getElementById(barId);
+  if(!bar){
+    // Find the fbar for this prefix and inject after it
+    var tabId='tab-'+(prefix==='live'?'live':prefix==='sold'?'sold':prefix==='dt'?'data':prefix==='mod'?'models':'live');
+    var tab=document.getElementById(tabId);
+    if(!tab)return;
+    var fbar=tab.querySelector('.fbar');
+    if(!fbar)return;
+    bar=document.createElement('div');
+    bar.id=barId;
+    bar.className='preset-bar';
+    fbar.parentNode.insertBefore(bar,fbar.nextSibling);
+  }
+  if(!presets.length){bar.style.display='none';return;}
+  bar.style.display='flex';
+  bar.innerHTML='<span style="font-size:11px;color:var(--ink3);white-space:nowrap">★ Presets:</span>'
+    +'<select id="'+prefix+'-presets-sel" class="sel" style="max-width:180px;font-size:11.5px">'
+    +'<option value="">— select —</option>'
+    +presets.map(function(p){return '<option value="'+p.id+'">'+esc(p.name)+'</option>';}).join('')
+    +'</select>'
+    +'<button class="btn bsm" onclick="loadSelectedPreset(\''+prefix+'\')" style="font-size:11px">Load</button>'
+    +'<button class="btn bsm bg" onclick="deleteSelectedPreset(\''+prefix+'\')" style="font-size:11px">✕</button>';
+}
+
+function loadSelectedPreset(prefix){
+  var sel=document.getElementById(prefix+'-presets-sel');
+  if(!sel||!sel.value)return;
+  var presets=[];
+  try{presets=JSON.parse(localStorage.getItem('tau_presets_'+prefix)||'[]');}catch(e){}
+  var p=presets.find(function(x){return String(x.id)===sel.value;});
+  if(!p||!p.state)return;
+  var state=p.state;
+  ['q','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e&&state[k]!==undefined)e.value=state[k];
+  });
+  var mkEl=document.getElementById(prefix+'-make');
+  if(mkEl&&state.make!==undefined)mkEl.value=state.make;
+  if(state.make)syncModelFilter(prefix);
+  var mdlEl=document.getElementById(prefix+'-model');
+  if(mdlEl&&state.model!==undefined)mdlEl.value=state.model;
+  _SLIDER_KEYS.forEach(function(k){
+    var e=document.getElementById(prefix+'-'+k);
+    if(e&&state[k]!==undefined)e.value=state[k];
+  });
+  syncRange(prefix);syncYearRange(prefix);syncKmRange(prefix);
+  if(prefix==='live')renderLive();
+  else if(prefix==='sold')renderSold();
+  else if(prefix==='dt')renderData();
+  else if(prefix==='mod')renderModels();
+  showToast('"'+p.name+'" loaded','ok');
+}
+
+function deleteSelectedPreset(prefix){
+  var sel=document.getElementById(prefix+'-presets-sel');
+  if(!sel||!sel.value)return;
+  var presets=[];
+  try{presets=JSON.parse(localStorage.getItem('tau_presets_'+prefix)||'[]');}catch(e){}
+  presets=presets.filter(function(x){return String(x.id)!==sel.value;});
+  try{localStorage.setItem('tau_presets_'+prefix,JSON.stringify(presets));}catch(e){}
+  renderPresetBar(prefix);
 }
 /* ─── SHARED FILTER HELPER ─── */
 function filterRows(status,prefix){
@@ -1697,18 +1912,37 @@ function filterRows(status,prefix){
   });
 }
 function clearFilters(prefix){
-  ['q','make','model','body','dc','dmg','fuel','drv','engine','yearfrom','yearto','maxkm','minprice','maxprice','sort','status','daterange'].forEach(function(k){
+  // Reset all select + text inputs
+  ['q','make','model','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
-    if(!e)return;
-    if(e.tagName==='SELECT')e.value='';else e.value='';
+    if(e)e.value='';
   });
-  if(prefix==='live')renderLive();
-  else if(prefix==='sold')renderSold();
-  else if(prefix==='data'||prefix==='dt')renderData();
-  else if(prefix==='an'){}
-  else if(prefix==='dash'){renderDash();}
-  else if(prefix==='mod'){renderModels();}
-  else if(prefix==='dash')renderDash();
+  // Reset USD price range (correct IDs: minusd / maxusd)
+  var loUsd=document.getElementById(prefix+'-minusd');
+  var hiUsd=document.getElementById(prefix+'-maxusd');
+  if(loUsd)loUsd.value=0;
+  if(hiUsd)hiUsd.value=parseInt(hiUsd.max)||20000;
+  syncRange(prefix);
+  // Reset year range
+  var yrLo=document.getElementById(prefix+'-yearfrom');
+  var yrHi=document.getElementById(prefix+'-yearto');
+  if(yrLo)yrLo.value=parseInt(yrLo.min)||1995;
+  if(yrHi)yrHi.value=parseInt(yrHi.max)||2026;
+  syncYearRange(prefix);
+  // Reset KM range (both min AND max)
+  var kmLo=document.getElementById(prefix+'-minkm');
+  var kmHi=document.getElementById(prefix+'-maxkm');
+  if(kmLo)kmLo.value=0;
+  if(kmHi)kmHi.value=parseInt(kmHi.max)||300000;
+  syncKmRange(prefix);
+  // Clear auto-saved filter state so reload doesn't restore cleared filters
+  try{localStorage.removeItem('tau_fs_'+prefix);}catch(e){}
+  // Render
+  if(prefix==='live')      renderLive();
+  else if(prefix==='sold') renderSold();
+  else if(prefix==='data'||prefix==='dt') renderData();
+  else if(prefix==='mod')  renderModels();
+  else if(prefix==='dash') renderDash();
 }
 function sortRows(rows,srt){
   return rows.slice().sort(function(a,b){
@@ -1741,6 +1975,7 @@ function sortRows(rows,srt){
 }
 /* ─── LIVE AUCTIONS ─── */
 function renderLive(){
+  saveFilterState('live');
   var srt  = gv('live-sort')||'ends_asc';
   var rows = sortRows(filterRows('active','live'),srt);
   var tb   = document.getElementById('live-tbody');
@@ -1753,6 +1988,7 @@ function renderLive(){
 
 /* ─── SOLD ARCHIVE ─── */
 function renderSold(){
+  saveFilterState('sold');
   var srt  = gv('sold-sort')||'ended_desc';
   var rows = sortRows(filterRows('ended','sold'),srt);
   var tb   = document.getElementById('sold-tbody');
@@ -1896,6 +2132,7 @@ function renderDash(){
 
 /* ─── MODELS ─── */
 function renderModels(){
+  saveFilterState('mod');
   var q     =(gv('mod-q')||'').toLowerCase();
   var mk    =gv('mod-make')||'';
   var mdl   =gv('mod-model')||'';
@@ -1980,6 +2217,7 @@ function hbar(label,val,max,suffix){suffix=suffix||'';return '<div class="hbar-r
   var srt  = gv('dt-sort')||'bids';
   rows     = sortRows(rows,srt);
   function renderData(){
+  saveFilterState('dt');
   var srt  = gv('dt-sort')||'bids';
   var rows = sortRows(filterRows('','dt'), srt);
   setTxt('data-count', rows.length+' of '+ALL_DATA.length+' listings');
@@ -2014,7 +2252,7 @@ function exportCSV(){
   // Try filtered subset; fall back to all data if filterRows can't run
   try{
     var filtered=filterRows('','dt');
-    if(filtered&&filtered.length>=0)rows=filtered;
+    if(filtered&&filtered.length>0)rows=filtered;
   }catch(e){}
   if(!rows.length){showToast('No data to export','warn');return;}
   var NL='\n';  // explicit newline
@@ -2526,7 +2764,9 @@ function init(){
     document.getElementById('shared-labour').value=gv('def-labour')||8000;
     buildFreightRoutes();buildPartsRef();updateDutyEff();updateRates();
     updateSetupSummary();updateCpRatesPill();
+    ['live','sold','dt','mod'].forEach(function(p){restoreFilterState(p);});
     renderDash();renderLive();renderSold();renderModels();updateWelcomeStats();
+    ['live','sold','dt','mod'].forEach(function(p){renderPresetBar(p);});
     ['live','sold','dt'].forEach(function(p){initRange(p);});
     ['live','sold','dt','mod'].forEach(function(p){syncYearRange(p);syncKmRange(p);});
     loadGhToken();updateSyncStatus();
