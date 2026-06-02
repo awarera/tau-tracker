@@ -20,8 +20,8 @@ import urllib.request
 from datetime import datetime, timezone, timedelta
 
 # ── Config ─────────────────────────────────────────────────────────────────────
-DISCOVER_PAGES   = 15     # pages per daily run (10 items/page)
-INITIAL_PAGES    = 80     # first-ever run — deeper crawl
+DISCOVER_PAGES   = 200    # ceiling — smart stopping exits much earlier in practice
+INITIAL_PAGES    = 200    # kept for backwards compat — now same as DISCOVER_PAGES
 REQUEST_DELAY    = 1.5    # seconds between fetches
 MAX_RECHECK      = 150    # active + upcoming re-checks per run (was 60)
 MAX_REVALIDATE   = 150    # ended listings with unverified prices to re-validate per run
@@ -314,24 +314,50 @@ def parse_listing(stk, html, existing=None):
     return d
 
 # ── Discovery ─────────────────────────────────────────────────────────────────
-def discover_stknos(max_pages):
+def discover_stknos(max_pages, known_stks=None):
+    """
+    Paginate TAU search results collecting stkNo hashes.
+
+    Stopping rules (whichever comes first):
+      1. Page fetch fails
+      2. Page returns 0 stknos not already seen in this run  (end of TAU pagination)
+      3. 3 consecutive pages where every stk is already in known_stks (DB already up to date)
+
+    Rule 3 means daily runs stop after ~3-5 pages once the DB is fully populated.
+    Rule 2 ensures a full first-pass discovers everything TAU has.
+    """
     found, seen = [], set()
-    base = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}'
-    print(f"  Crawling up to {max_pages} search pages…")
+    known     = known_stks or set()
+    base      = 'https://www.tau-trade.com/sal_frt/stock/search?itemCategory=car&page={p}'
+    consec_known = 0   # consecutive pages with 0 stks new to DB
+    print(f"  Crawling up to {max_pages} search pages (smart-stop enabled)…")
     for page in range(1, max_pages + 1):
         html = fetch_html(base.format(p=page))
         if not html:
-            print(f"  Page {page}: failed, stopping")
+            print(f"  Page {page}: fetch failed — stopping")
             break
         stks = re.findall(r'stkNo=([0-9a-f]{32})', html)
-        added = 0
-        for s in stks:
-            if s not in seen:
-                seen.add(s); found.append(s); added += 1
-        print(f"  Page {page}: {added} new  ({len(found)} total)")
+        added       = 0   # new to seen set (dedup within this run)
+        new_to_db   = 0   # genuinely new to our database
+        for stk in stks:
+            if stk not in seen:
+                seen.add(stk); found.append(stk); added += 1
+                if stk not in known:
+                    new_to_db += 1
+        print(f"  Page {page:>3}: {added:>3} unique  {new_to_db:>3} new-to-DB  "
+              f"(total found {len(found)})")
+        # Rule 2 — end of TAU's listing pages
         if added == 0 and page > 2:
-            print("  No new stkNos — stopping")
+            print("  End of TAU pages — stopping")
             break
+        # Rule 3 — all stks on this page already in DB → count toward early-exit
+        if new_to_db == 0:
+            consec_known += 1
+            if consec_known >= 3:
+                print(f"  3 consecutive fully-known pages — DB is current, stopping")
+                break
+        else:
+            consec_known = 0
         time.sleep(REQUEST_DELAY * 0.4)
     return found
 
@@ -387,9 +413,9 @@ def main():
     print(f"Dataset       : {len(listings)}  ({n_active} active  {n_upc} upcoming  {n_ended} ended)")
 
     # ── 1. Discover new listings ───────────────────────────────────────────────
-    pages = INITIAL_PAGES if len(listings) < 50 else DISCOVER_PAGES
+    pages = DISCOVER_PAGES  # smart stopping in discover_stknos handles early exit
     print(f"\n── Discovery ({pages} pages) ──")
-    discovered = discover_stknos(pages)
+    discovered = discover_stknos(pages, known_stks=set(by_stk.keys()))
     seed = load_seed()
     print(f"Seed file     : {len(seed)}")
     all_cands  = list(dict.fromkeys(discovered + seed))
