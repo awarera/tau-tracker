@@ -616,6 +616,22 @@ input[type=range]::-moz-range-track{
   /* Hide ★ Save on very small screens (accessible via scroll) */
   .preset-bar{ display:none !important }
 }
+
+/* ─── SLIDER VALUE LABELS — mobile fix ─── */
+.range-dual{display:flex;flex-direction:column;min-width:140px;gap:0}
+.range-track{position:relative;height:28px;display:flex;align-items:center}
+.range-vals{
+  display:flex;justify-content:space-between;align-items:center;
+  padding:0 2px;margin-top:1px;
+}
+.rv-lo,.rv-hi{font-size:11px;font-weight:600;color:var(--peach);white-space:nowrap;min-width:28px}
+.rv-hi{text-align:right}
+.rv-lbl{font-size:10px;color:var(--ink4);text-align:center;flex:1}
+@media(max-width:430px){
+  .rv-lo,.rv-hi{font-size:11.5px}
+  .rv-lbl{font-size:10.5px}
+  .range-dual{min-width:130px}
+}
 </style>
 </head>
 <body>
@@ -803,8 +819,7 @@ input[type=range]::-moz-range-track{
     <select class="sel" id="dash-make" onchange="syncModelFilter('dash');renderDash()"><option value="">All Makes</option></select>
     <select class="sel" id="dash-model" onchange="renderDash()"><option value="">All Models</option></select>
     <select class="sel" id="dash-status" onchange="renderDash()"><option value="">All Status</option><option value="active">Active Only</option><option value="upcoming">Upcoming Only</option><option value="ended">Sold Only</option></select>
-    <input class="inp" type="number" id="dash-yearfrom" placeholder="Year from" oninput="renderDash()" style="width:90px">
-    <input class="inp" type="number" id="dash-yearto" placeholder="Year to" oninput="renderDash()" style="width:80px">
+    <div class="range-dual" style="min-width:150px"><div class="range-track"><div class="range-fill" id="dash-year-fill"></div><input type="range" id="dash-yearfrom" min="1995" max="2026" step="1" value="1995" oninput="syncYearRange('dash');renderDash()"><input type="range" id="dash-yearto" min="1995" max="2026" step="1" value="2026" oninput="syncYearRange('dash');renderDash()"></div><div class="range-vals"><span class="rv-lo" id="dash-year-lo">1995</span><span class="rv-lbl">Year</span><span class="rv-hi" id="dash-year-hi">any</span></div></div>
     <button class="btn bg bsm" onclick="clearFilters('dash')" title="Reset all filters to default">⟳ Reset</button>
   </div>
   <!-- KPI tiles -->
@@ -2077,7 +2092,11 @@ function clearFilters(prefix){
   else if(prefix==='sold') renderSold();
   else if(prefix==='data'||prefix==='dt') renderData();
   else if(prefix==='mod')  renderModels();
-  else if(prefix==='dash') renderDash();
+  else if(prefix==='dash'){
+    var dyL=document.getElementById('dash-yearfrom');var dyH=document.getElementById('dash-yearto');
+    if(dyL)dyL.value=parseInt(dyL.min)||1995;if(dyH)dyH.value=parseInt(dyH.max)||2026;
+    syncYearRange('dash');renderDash();
+  }
 }
 function sortRows(rows,srt){
   return rows.slice().sort(function(a,b){
@@ -2907,7 +2926,7 @@ function init(){
     renderDash();renderLive();renderSold();renderModels();updateWelcomeStats();
     ['live','sold','dt','mod'].forEach(function(p){renderPresetBar(p);});
     ['live','sold','dt'].forEach(function(p){initRange(p);});
-    ['live','sold','dt','mod'].forEach(function(p){syncYearRange(p);syncKmRange(p);});
+    ['live','sold','dt','mod','dash'].forEach(function(p){syncYearRange(p);syncKmRange(p);});
     loadGhToken();updateSyncStatus();
     renderPanel();
     var rp=document.getElementById('rate-pill');
