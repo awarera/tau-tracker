@@ -330,84 +330,29 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
 
 /* Analytics chart grid responsive */
 
-/* ═══════════════════════════════════════════════════
-   DUAL-RANGE SLIDER — single authoritative definition
-   ═══════════════════════════════════════════════════ */
-/* Grey background track line */
-/* Coloured selection fill */
-
 /* ═══ MOBILE ≤ 480px ═══ */
-/* ═══ DUAL-RANGE SLIDER ═══════════════════════════════════════
-   Inputs are fully contained in range-track — never overflow
-   into range-vals, preventing label truncation on all browsers.
-   ═══════════════════════════════════════════════════════════ */
-.range-dual{display:flex;flex-direction:column;min-width:175px;flex:1;user-select:none}
-.range-track{
-  position:relative;height:22px;
-  display:flex;align-items:center;
-  margin-bottom:2px;
-}
 /* Grey background line via ::before — no extra DOM elements */
-.range-track::before{
-  content:'';position:absolute;left:0;right:0;
-  top:50%;transform:translateY(-50%);
-  height:4px;background:var(--bd);border-radius:2px;z-index:0;
-}
-.range-fill{
-  position:absolute;
-  top:50%;transform:translateY(-50%);
-  height:4px;background:var(--peach);border-radius:2px;
-  pointer-events:none;z-index:1;
-}
-/* Inputs fill the track height — contained, no overflow */
-.range-dual input[type=range]{
-  position:absolute;left:0;top:0;width:100%;height:100%;
-  background:transparent;
-  -webkit-appearance:none;appearance:none;
-  outline:none;margin:0;padding:0;
-  pointer-events:none;z-index:2;
-}
-.range-dual input[type=range]::-webkit-slider-thumb{
-  pointer-events:all;-webkit-appearance:none;appearance:none;
-  width:16px;height:16px;border-radius:50%;
-  background:var(--peach);border:2.5px solid #fff;
-  box-shadow:0 1px 4px rgba(0,0,0,.2);cursor:pointer;
-}
-.range-dual input[type=range]::-webkit-slider-runnable-track{
-  height:4px;background:transparent;
-}
-.range-dual input[type=range]::-moz-range-thumb{
-  pointer-events:all;width:14px;height:14px;
-  border-radius:50%;background:var(--peach);
-  border:2.5px solid #fff;cursor:pointer;
-}
-.range-dual input[type=range]::-moz-range-track{height:4px;background:transparent}
-/* Labels — fixed width + overflow:visible prevents clipping */
-.range-vals{
-  display:flex;justify-content:space-between;align-items:center;
-}
-.rv-lo,.rv-hi{
-  font-size:11px;font-weight:600;color:var(--peach);
-  width:36px;white-space:nowrap;overflow:visible;
-  font-family:'DM Mono',monospace;
-}
+/* ═══ MOBILE ≤ 480px ═══ */
+/* Dual-thumb range slider */
+.range-dual{display:flex;flex-direction:column;gap:2px;min-width:175px;padding:4px 2px 2px}
+.range-track{position:relative;height:4px;background:var(--bd);border-radius:2px;margin:8px 6px 8px}
+.range-fill{position:absolute;height:100%;background:var(--peach);border-radius:2px;pointer-events:none}
+.range-dual input[type="range"]{position:absolute;top:-5px;left:0;width:100%;height:14px;background:transparent;-webkit-appearance:none;appearance:none;pointer-events:none;z-index:2}
+.range-dual input[type="range"]::-webkit-slider-thumb{pointer-events:all;-webkit-appearance:none;width:14px;height:14px;border-radius:50%;background:var(--peach);border:2px solid var(--wh);box-shadow:0 1px 3px rgba(0,0,0,.2);cursor:pointer}
+.range-dual input[type="range"]::-webkit-slider-runnable-track{height:0;background:transparent}
+.range-dual input[type="range"]::-moz-range-thumb{pointer-events:all;width:12px;height:12px;border-radius:50%;background:var(--peach);border:2px solid var(--wh);cursor:pointer}
+.range-dual input[type="range"]::-moz-range-track{height:0;background:transparent}
+.range-vals{display:flex;justify-content:space-between;align-items:center;margin-top:2px}
+.rv-lo,.rv-hi{font-size:10.5px;font-weight:600;color:var(--peach);font-family:'DM Mono',monospace;min-width:28px;white-space:nowrap;position:relative;z-index:5;overflow:visible}
 .rv-hi{text-align:right}
 .rv-lbl{font-size:10px;color:var(--ink4);text-transform:uppercase;letter-spacing:.3px;text-align:center;flex:1}
 
 @media(max-width:480px){
-  /* ── Slider (above) ── */
-  .range-track{height:38px}
-  .range-dual input[type=range]::-webkit-slider-thumb{width:24px;height:24px}
-  .range-dual input[type=range]::-moz-range-thumb{width:22px;height:22px}
-  .rv-lo,.rv-hi{font-size:11.5px;width:38px}
-  /* ── Nav ── */
   .nav{overflow-x:auto;flex-wrap:nowrap !important;-webkit-overflow-scrolling:touch;padding:4px 8px;gap:2px;scrollbar-width:none}
   .nav::-webkit-scrollbar{display:none}
   .nb{white-space:nowrap;font-size:11px;padding:5px 10px;flex-shrink:0}
-  /* ── Header ── */
   .hdr{gap:4px;padding:5px 10px}
   .hdr-rates{font-size:10.5px;white-space:nowrap}
-  /* ── Filter bar ordering ── */
   .fbar{flex-wrap:wrap;gap:5px;align-items:stretch}
   .fbar-reset{order:-999 !important;flex-basis:100%;padding:10px 0;font-size:14px;font-weight:700;border-radius:10px;margin-bottom:2px}
   .fbar .fsrch{order:0;flex-basis:100%}
@@ -415,19 +360,21 @@ tr.trow:hover td{background:var(--s2);cursor:pointer}
   .fbar select[id$="-model"]{order:2;flex:1;min-width:0}
   .fbar select[id$="-dc"]{order:3;flex:1;min-width:0}
   .fbar select[id$="-engine"]{order:4;flex:1;min-width:0}
-  .fbar .range-dual{order:5;flex:1;min-width:calc(50% - 4px)}
+  .fbar .range-dual{order:5;flex:1;min-width:calc(50% - 4px);max-width:none}
   .fbar select[id$="-sort"],.fbar select[id$="-status"]{order:6;flex:1;min-width:0}
   .fbar select[id$="-body"],.fbar select[id$="-dmg"],.fbar select[id$="-fuel"],.fbar select[id$="-drv"]{order:7;flex:1;min-width:calc(33% - 4px);font-size:11.5px}
   .fbar .btn:not(.fbar-reset){order:8}
   .fbar .sel,.fbar .inp{min-height:42px;font-size:13px;border-radius:8px}
-  /* ── Layout ── */
+  .range-dual input[type="range"]{height:28px;top:-12px}
+  .range-dual input[type="range"]::-webkit-slider-thumb{width:22px;height:22px}
+  .range-dual input[type="range"]::-moz-range-thumb{width:20px;height:20px}
+  .range-track{margin:14px 6px 16px}
   .g4{grid-template-columns:1fr 1fr}
   .g2{grid-template-columns:1fr}
   .tbl-wrap{-webkit-overflow-scrolling:touch}
   .opp-item{flex-wrap:wrap;gap:4px}
   .preset-bar{flex-wrap:wrap}
-}
-</style>
+}</style>
 </head>
 <body>
 
