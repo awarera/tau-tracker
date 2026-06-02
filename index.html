@@ -505,6 +505,43 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 .preset-btn:hover::before{opacity:1}
 /* Drill-down table compact */
 .drill-tr td{padding:5px 6px}
+
+/* ─── MOBILE FILTER IMPROVEMENTS ─── */
+@media(max-width:768px){
+  .fbar-reset{
+    order:-999 !important;
+    width:100%;
+    margin-bottom:8px;
+    padding:8px 0;
+    font-size:13px;
+    font-weight:600;
+    border-radius:8px;
+  }
+  .fbar .sel{ font-size:12.5px; min-width:0 }
+  .fbar .inp{ font-size:12.5px }
+  .range-dual{ min-width:140px; flex:1 }
+  .hdr{ gap:6px; padding:6px 10px }
+  .hdr-rates{ font-size:10.5px; white-space:nowrap }
+  .nav{
+    overflow-x:auto;
+    flex-wrap:nowrap !important;
+    -webkit-overflow-scrolling:touch;
+    padding:4px 8px;
+    gap:2px;
+    scrollbar-width:none;
+  }
+  .nav::-webkit-scrollbar{ display:none }
+  .nb{
+    white-space:nowrap;
+    font-size:11px;
+    padding:5px 10px;
+    flex-shrink:0;
+  }
+  .g4{ grid-template-columns:1fr 1fr }
+  .g2{ grid-template-columns:1fr }
+  .tbl-wrap{ -webkit-overflow-scrolling:touch }
+  .opp-item{ flex-wrap:wrap; gap:4px }
+}
 </style>
 </head>
 <body>
@@ -605,10 +642,6 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
           </div>
           <div style="margin-top:8px;font-weight:700;color:var(--g);font-size:13px">Margin ≈ KES 700,000</div>
         </div>
-        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">
-          <strong>Filter:</strong> Use the <span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 5px;font-size:10px">▲ Route A</span>
-          button on Active Auctions to see all candidates instantly.
-        </div>
       </div>
 
       <!-- Route B -->
@@ -634,10 +667,6 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
             <span style="font-weight:700;color:var(--am)">Parts resale value</span><span class="mono bold" style="color:var(--am)">≈ KES 3,200,000</span>
           </div>
           <div style="margin-top:8px;font-weight:700;color:var(--am);font-size:13px">Margin ≈ KES 1,700,000</div>
-        </div>
-        <div style="margin-top:10px;font-size:11.5px;color:var(--ink3)">
-          <strong>Filter:</strong> Use the <span style="background:var(--am);color:#fff;border-radius:3px;padding:1px 5px;font-size:10px">⚙ Route B</span>
-          button on Active Auctions. Use Container Planner for exact P&amp;L.
         </div>
       </div>
     </div>
@@ -770,9 +799,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     </div>
   </div>
 
-    <button class="btn preset-btn" id="live-route-A" data-preset="live-A" style="background:var(--g);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','A')" data-tip="Rolling + Engine Starts → buy lightly damaged car, repair in Japan, ship to Kenya as unit. Use ⟳ Reset to clear.">▲ Route A</button>
-    <button class="btn preset-btn" id="live-route-B" data-preset="live-B" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" data-tip="Not Rolling / No Start → dismantle in Japan, ship parts in shared 20ft container to Kenya. Use ⟳ Reset to clear.">⚙ Route B</button>
-    <button class="btn bg bsm" onclick="clearFilters('live')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bp fbar-reset" onclick="clearFilters('live')" title="Reset all filters to default">⟳ Reset</button>
     <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('live')">★ Save</button>
   </div>
   
@@ -813,7 +840,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
       <span class="rv-hi" id="sold-usd-hi">any</span>
     </div>
   </div>
-    <button class="btn bg bsm" onclick="clearFilters('sold')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bp fbar-reset" onclick="clearFilters('sold')" title="Reset all filters to default">⟳ Reset</button>
     <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('sold')">★ Save</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -838,7 +865,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="mod-drv" onchange="renderModels()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
     <select class="sel" id="mod-status" onchange="renderModels()"><option value="">All Status</option><option value="active">Has Live</option><option value="ended">Sold Only</option></select>
     <select class="sel" id="mod-sort" onchange="renderModels()"><option value="count">Most Listings</option><option value="bids">Most Bids</option><option value="price">Highest Avg Price</option></select>
-    <button class="btn bg bsm" onclick="clearFilters('mod')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bp fbar-reset" onclick="clearFilters('mod')" title="Reset all filters to default">⟳ Reset</button>
     <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('mod')">★ Save</button>
   </div>
   <div class="tbl-wrap"><table>
@@ -852,7 +879,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 <div class="tab" id="tab-data">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div class="sec-title" style="margin-bottom:0">Raw Data <span class="sec-sub" id="data-count"></span></div>
-    <div style="display:flex;gap:7px"><button class="btn bg bsm" onclick="clearFilters('dt')" title="Reset all filters to default">⟳ Reset</button>
+    <div style="display:flex;gap:7px"><button class="btn bp fbar-reset" onclick="clearFilters('dt')" title="Reset all filters to default">⟳ Reset</button>
     <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('dt')">★ Save</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
   </div>
   <div class="fbar" style="margin-bottom:12px">
@@ -1745,7 +1772,7 @@ var _SLIDER_KEYS=['minusd','maxusd','yearfrom','yearto','minkm','maxkm'];
 
 function saveFilterState(prefix){
   var state={};
-  _FILTER_KEYS.forEach(function(k){
+  _FILTER_KEYS.filter(function(k){return k!=='q';}).forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(e)state[k]=e.value||'';
   });
@@ -1762,7 +1789,7 @@ function restoreFilterState(prefix){
     if(!stored)return false;
     var state=JSON.parse(stored);
     // Restore non-model selects first
-    ['q','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
+    ['body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
       var e=document.getElementById(prefix+'-'+k);
       if(e&&state[k]!==undefined)e.value=state[k];
     });
@@ -1787,7 +1814,7 @@ function saveNamedPreset(prefix){
   var name=(prompt('Name this preset:','')||'').trim();
   if(!name)return;
   var state={};
-  _FILTER_KEYS.forEach(function(k){
+  _FILTER_KEYS.filter(function(k){return k!=='q';}).forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(e)state[k]=e.value||'';
   });
@@ -1841,7 +1868,7 @@ function loadSelectedPreset(prefix){
   var p=presets.find(function(x){return String(x.id)===sel.value;});
   if(!p||!p.state)return;
   var state=p.state;
-  ['q','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
+  ['body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(e&&state[k]!==undefined)e.value=state[k];
   });
