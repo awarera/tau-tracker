@@ -487,6 +487,24 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
   .tval{font-size:19px}
   .hdr-title{font-size:14px}
 }
+
+/* Route A/B button active state and tooltip */
+.route-btn{position:relative}
+.route-btn.route-active{outline:2px solid rgba(255,255,255,0.9);outline-offset:1px;filter:brightness(1.15)}
+
+/* ─── Preset button CSS tooltip ─── */
+.preset-btn{position:relative}
+.preset-btn::after{content:attr(data-tip);position:absolute;bottom:calc(100% + 8px);left:50%;
+  transform:translateX(-50%);background:var(--ink1);color:var(--wh);padding:6px 10px;
+  border-radius:5px;font-size:11.5px;font-weight:400;line-height:1.45;white-space:normal;
+  width:230px;text-align:center;opacity:0;pointer-events:none;transition:opacity .15s;z-index:300}
+.preset-btn:hover::after{opacity:1}
+.preset-btn::before{content:'';position:absolute;bottom:calc(100% + 4px);left:50%;
+  transform:translateX(-50%);border:5px solid transparent;border-top-color:var(--ink1);
+  opacity:0;pointer-events:none;transition:opacity .15s;z-index:300}
+.preset-btn:hover::before{opacity:1}
+/* Drill-down table compact */
+.drill-tr td{padding:5px 6px}
 </style>
 </head>
 <body>
@@ -684,7 +702,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dash-status" onchange="renderDash()"><option value="">All Status</option><option value="active">Active Only</option><option value="upcoming">Upcoming Only</option><option value="ended">Sold Only</option></select>
     <input class="inp" type="number" id="dash-yearfrom" placeholder="Year from" oninput="renderDash()" style="width:90px">
     <input class="inp" type="number" id="dash-yearto" placeholder="Year to" oninput="renderDash()" style="width:80px">
-    <button class="btn bg bsm" onclick="clearFilters('dash')">✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('dash')" title="Reset all filters to default">⟳ Reset</button>
   </div>
   <!-- KPI tiles -->
   <div class="g4 mb12">
@@ -752,16 +770,12 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     </div>
   </div>
 
-    <button class="btn" style="background:var(--g);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','A')" title="Rolling + Engine Starts">▲ Route A</button>
-    <button class="btn" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" title="Not Rolling or No Start">⚙ Route B</button>
-    <button class="btn bg bsm" onclick="clearFilters('live')">
-    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('live')">★ Save</button>✕ Clear</button>
+    <button class="btn preset-btn" id="live-route-A" data-preset="live-A" style="background:var(--g);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','A')" data-tip="Rolling + Engine Starts → buy lightly damaged car, repair in Japan, ship to Kenya as unit. Use ⟳ Reset to clear.">▲ Route A</button>
+    <button class="btn preset-btn" id="live-route-B" data-preset="live-B" style="background:var(--am);color:#fff;font-size:11px;padding:4px 10px;border-radius:var(--rs)" onclick="applyPreset('live','B')" data-tip="Not Rolling / No Start → dismantle in Japan, ship parts in shared 20ft container to Kenya. Use ⟳ Reset to clear.">⚙ Route B</button>
+    <button class="btn bg bsm" onclick="clearFilters('live')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('live')">★ Save</button>
   </div>
-  <div style="display:flex;gap:20px;flex-wrap:wrap;padding:4px 2px 8px;font-size:12px;color:var(--ink3)">
-    <div><span style="background:var(--g);color:#fff;border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;margin-right:5px">▲ Route A</span>Rolling + Engine Starts — light repair in Japan, export to Kenya for resale</div>
-    <div><span style="background:var(--am);color:#fff;border-radius:3px;padding:1px 6px;font-size:10.5px;font-weight:700;margin-right:5px">⚙ Route B</span>Not Rolling / No Start — dismantle in Japan, ship parts by container to Kenya</div>
-  </div>
-  <div style="font-size:11px;color:var(--ink3);padding:3px 2px 6px"><span style="color:var(--g);font-weight:700">▲ Route A</span> Fix &amp; Export — Rolling condition, engine starts &nbsp;·&nbsp; <span style="color:var(--am);font-weight:700">⚙ Route B</span> Parts Harvest — Not Rolling or engine damaged</div>
+  
   <div class="tbl-wrap"><table>
     <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Price ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
     <tbody id="live-tbody"></tbody>
@@ -799,8 +813,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
       <span class="rv-hi" id="sold-usd-hi">any</span>
     </div>
   </div>
-    <button class="btn bg bsm" onclick="clearFilters('sold')">
-    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('sold')">★ Save</button>✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('sold')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('sold')">★ Save</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Damage</th><th>Engine</th><th>DC · Drive · Fuel</th><th>Final ¥ / USD</th><th>Bids</th><th>+ Batch</th></tr></thead>
@@ -824,8 +838,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="mod-drv" onchange="renderModels()"><option value="">4WD/2WD</option><option>4WD</option><option>2WD</option></select>
     <select class="sel" id="mod-status" onchange="renderModels()"><option value="">All Status</option><option value="active">Has Live</option><option value="ended">Sold Only</option></select>
     <select class="sel" id="mod-sort" onchange="renderModels()"><option value="count">Most Listings</option><option value="bids">Most Bids</option><option value="price">Highest Avg Price</option></select>
-    <button class="btn bg bsm" onclick="clearFilters('mod')">
-    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('mod')">★ Save</button>✕ Clear</button>
+    <button class="btn bg bsm" onclick="clearFilters('mod')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('mod')">★ Save</button>
   </div>
   <div class="tbl-wrap"><table>
     <thead><tr><th>Make / Model</th><th>Listings</th><th>Active</th><th>Avg Price ¥ / USD</th><th>Avg Bids</th><th>Price Range ¥</th><th>Top Damage</th><th>Typical DC</th></tr></thead>
@@ -838,8 +852,8 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
 <div class="tab" id="tab-data">
   <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
     <div class="sec-title" style="margin-bottom:0">Raw Data <span class="sec-sub" id="data-count"></span></div>
-    <div style="display:flex;gap:7px"><button class="btn bg bsm" onclick="clearFilters('dt')">
-    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('dt')">★ Save</button>✕ Clear</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
+    <div style="display:flex;gap:7px"><button class="btn bg bsm" onclick="clearFilters('dt')" title="Reset all filters to default">⟳ Reset</button>
+    <button class="btn bsm" style="font-size:11px" onclick="saveNamedPreset('dt')">★ Save</button><button class="btn bg bsm" onclick="exportCSV()">↓ CSV</button></div>
   </div>
   <div class="fbar" style="margin-bottom:12px">
     <div class="fsrch"><svg width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg><input type="text" id="dt-q" placeholder="Search any field…" oninput="renderData()"></div>
@@ -871,7 +885,7 @@ td.grade-cell{max-width:160px;overflow:hidden;text-overflow:ellipsis;white-space
     <select class="sel" id="dt-sort" onchange="renderData()"><option value="bids">Bids ↓</option><option value="price_desc">Price ↓</option><option value="price_asc">Price ↑</option><option value="score">Score ↓</option><option value="year_desc">Year ↓</option><option value="mileage">Mileage ↑</option></select>
   </div>
   <div class="tbl-wrap"><table>
-    <thead><tr><th>Stock</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
+    <thead><tr><th>Stock</th><th>Status</th><th>Make / Model</th><th>Grade</th><th>Year</th><th>KM</th><th>Engine</th><th>Damage</th><th>DC</th><th>Price ¥ / USD</th><th>Bids</th><th>Batch</th><th>TAU</th></tr></thead>
     <tbody id="data-tbody"></tbody>
   </table></div>
 </div>
@@ -1533,7 +1547,6 @@ function syncKmRange(prefix){
   if(hiLbl)hiLbl.textContent=hi>=mx?'any':Math.round(hi/1000)+'K km';
 }
 function applyPreset(prefix, route){
-  // Reset all inputs without triggering render
   ['q','make','model','body','dc','dmg','fuel','drv','engine','sort','status','daterange'].forEach(function(k){
     var e=document.getElementById(prefix+'-'+k);
     if(e)e.value='';
@@ -1557,16 +1570,25 @@ function applyPreset(prefix, route){
   if(route==='A'){
     var dcA=document.getElementById(prefix+'-dc');
     var engA=document.getElementById(prefix+'-engine');
-    if(dcA) dcA.value='Rolling';
+    if(dcA)dcA.value='Rolling';
     if(engA)engA.value='Start';
-  } else if(route==='B'){
+  }else if(route==='B'){
     var dcB=document.getElementById(prefix+'-dc');
     if(dcB)dcB.value='Not Rolling';
   }
-  // Single render
-  if(prefix==='live')      renderLive();
-  else if(prefix==='sold') renderSold();
-  else if(prefix==='data') renderData();
+  // Visual active state on button
+  document.querySelectorAll('[data-preset]').forEach(function(b){
+    b.style.outline=''; b.style.fontWeight='';
+  });
+  var activeBtn=document.querySelector('[data-preset="'+prefix+'-'+route+'"]');
+  if(activeBtn){
+    activeBtn.style.outline='2px solid white';
+    activeBtn.style.outlineOffset='-3px';
+    activeBtn.style.fontWeight='700';
+  }
+  if(prefix==='live')renderLive();
+  else if(prefix==='sold')renderSold();
+  else if(prefix==='data')renderData();
 }
 
 function toggleModelRow(make, model){
@@ -1597,49 +1619,59 @@ function buildModelDrilldown(listings,make,model){
   var prices=listings.filter(function(d){return d.price;}).map(function(d){return d.price;});
   var avgPrice=prices.length?Math.round(prices.reduce(function(a,b){return a+b;},0)/prices.length):0;
   var maxBids=listings.reduce(function(m,d){return Math.max(m,d.bids||0);},0);
-  var cardsHtml=listings.map(function(d){
+
+  var rowsHtml=listings.map(function(d){
     var usd=d.price?'$'+Math.round(d.price*RATES.jpu).toLocaleString():'';
     var eng=(d.engine_s||'').trim();
     var isStart=eng.toLowerCase()==='start';
-    var engColor=isStart?'var(--g)':eng?'var(--rd)':'var(--ink3)';
-    var isRouteA=d.dc==='Rolling'&&isStart;
-    var isRouteB=d.dc==='Not Rolling';
-    var routeBadge=isRouteA
-      ?'<span style="background:var(--g);color:#fff;border-radius:3px;padding:0 5px;font-size:9.5px;font-weight:700">A</span>'
-      :isRouteB
-      ?'<span style="background:var(--am);color:#fff;border-radius:3px;padding:0 5px;font-size:9.5px;font-weight:700">B</span>'
-      :'';
-    var statusBadge='<span class="badge '+(d.status==='active'?'b-live':'b-sold')+'" style="font-size:9.5px;flex-shrink:0">'+(d.status==='active'?'LIVE':'SOLD')+'</span>';
-    var dcBadge='<span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'" style="font-size:9.5px">'+esc(d.dc||'—')+'</span>';
-    var kmStr=d.mileage?Math.round(d.mileage/1000)+'K km':'—';
-    var meta=esc(d.grade||'—')+' · '+(d.year||'—')+' · '+kmStr;
-    var bidsColor=d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink3)';
-    return '<div class="drill-card trow" data-stk="'+d.stk+'" onclick="toggleRow(\''+d.stk+'\',\'models\')">'
-      +'<div class="drill-left">'
-        +statusBadge+routeBadge
-        +'<span style="font-size:11.5px;color:var(--ink2)">'+meta+'</span>'
-        +'<span style="font-size:11.5px;color:'+engColor+';font-weight:600">'+esc(eng||'—')+'</span>'
-        +dcBadge
-      +'</div>'
-      +'<div class="drill-right">'
-        +(d.price?'<span class="mono bold" style="font-size:12px">'+fJ(d.price)+'</span>':'<span style="color:var(--ink4)">—</span>')
-        +(usd?'<span style="font-size:11px;color:var(--bl)">'+usd+'</span>':'')
-        +'<span style="font-size:11.5px;font-weight:600;color:'+bidsColor+'">'+d.bids+' bids</span>'
-        +'<button class="btn bp bxs" onclick="event.stopPropagation();addToBatch(\''+d.stk+'\')" style="font-size:10.5px;padding:2px 7px">+Batch</button>'
-        +'<a href="'+(d.url||'#')+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--bl);font-size:13px;text-decoration:none">↗</a>'
-      +'</div>'
-      +'</div>';
+    var engColor=isStart?'color:var(--g)':eng?'color:var(--rd)':'color:var(--ink3)';
+    var sbCls=d.status==='active'?'b-live':'b-sold';
+    var sbLbl=d.status==='active'?'LIVE':'SOLD';
+    var grade=esc((d.grade||'—').slice(0,16)+(d.grade&&d.grade.length>16?'…':''));
+    var kmStr=d.mileage?Math.round(d.mileage/1000)+'K':'—';
+    var bidsColor=d.bids>100?'var(--peach)':d.bids>50?'var(--am)':'var(--ink2)';
+    return '<tr class="trow drill-tr" data-stk="'+d.stk+'" onclick="toggleRow(\''+d.stk+'\',\'models\')">'
+      +'<td class="mono" style="font-size:11px;white-space:nowrap">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
+      +'<td><span class="badge '+sbCls+'" style="font-size:9.5px">'+sbLbl+'</span></td>'
+      +'<td style="font-size:11.5px;max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="'+esc(d.grade||'')+'">'+grade+'</td>'
+      +'<td class="mono" style="font-size:11.5px">'+( d.year||'—')+'</td>'
+      +'<td class="mono" style="font-size:11.5px">'+kmStr+'</td>'
+      +'<td style="font-size:11.5px;'+engColor+'">'+esc(eng||'—')+'</td>'
+      +'<td><span class="badge '+(d.dc==='Rolling'?'b-rolling':'b-notroll')+'" style="font-size:9.5px">'+esc(d.dc||'—')+'</span></td>'
+      +'<td><div class="mono bold" style="font-size:11.5px">'+(d.price?fJ(d.price):'—')+'</div>'+(usd?'<div style="font-size:10px;color:var(--bl)">'+usd+'</div>':'')+'</td>'
+      +'<td class="mono" style="color:'+bidsColor+';font-weight:600;font-size:11.5px">'+d.bids+'</td>'
+      +'<td style="white-space:nowrap">'
+        +'<button class="btn bp bxs" onclick="event.stopPropagation();addToBatch(\''+d.stk+'\')" style="font-size:10px;padding:2px 6px">+</button>'
+        +'<a href="'+(d.url||('#'+d.stk))+'" target="_blank" onclick="event.stopPropagation()" style="color:var(--bl);font-size:12px;margin-left:4px;text-decoration:none">↗</a>'
+      +'</td>'
+      +'</tr>';
   }).join('');
+
   return '<div style="background:var(--s2);border-top:2px solid var(--bd)">'
-    +'<div style="display:flex;gap:16px;align-items:center;flex-wrap:wrap;padding:10px 16px 6px;border-bottom:1px solid var(--bd)">'
+    +'<div style="display:flex;gap:14px;align-items:center;flex-wrap:wrap;padding:8px 14px 6px;border-bottom:1px solid var(--bd)">'
     +'<span style="font-weight:700;font-size:13px">'+esc(make)+' '+esc(model)+'</span>'
     +'<span class="badge b-live">'+active+' active</span>'
     +'<span class="badge b-sold">'+ended+' sold</span>'
     +(avgPrice?'<span class="mono bold" style="font-size:12px">Avg '+fJ(avgPrice)+'</span>':'')
     +(maxBids?'<span style="font-size:11.5px;color:var(--am)">Peak '+maxBids+' bids</span>':'')
-    +'<span style="font-size:11.5px;color:var(--ink3)">'+listings.length+' total · click row for full detail</span>'
+    +'<span style="font-size:11px;color:var(--ink4)">Click any row for full detail</span>'
     +'</div>'
-    +'<div class="drill-list">'+cardsHtml+'</div>'
+    +'<div class="tbl-wrap" style="overflow-x:auto">'
+    +'<table style="width:100%;table-layout:auto">'
+    +'<thead><tr>'
+    +'<th style="font-size:10.5px;width:72px">Stock</th>'
+    +'<th style="font-size:10.5px;width:55px">Status</th>'
+    +'<th style="font-size:10.5px">Grade</th>'
+    +'<th style="font-size:10.5px;width:50px">Year</th>'
+    +'<th style="font-size:10.5px;width:55px">KM</th>'
+    +'<th style="font-size:10.5px;width:70px">Engine</th>'
+    +'<th style="font-size:10.5px;width:90px">DC</th>'
+    +'<th style="font-size:10.5px;width:120px">Price ¥ / USD</th>'
+    +'<th style="font-size:10.5px;width:45px">Bids</th>'
+    +'<th style="font-size:10.5px;width:55px"></th>'
+    +'</tr></thead>'
+    +'<tbody>'+rowsHtml+'</tbody>'
+    +'</table></div>'
     +'</div>';
 }
 
@@ -1935,8 +1967,10 @@ function clearFilters(prefix){
   if(kmLo)kmLo.value=0;
   if(kmHi)kmHi.value=parseInt(kmHi.max)||300000;
   syncKmRange(prefix);
-  // Clear auto-saved filter state so reload doesn't restore cleared filters
+  // Clear auto-saved filter state
   try{localStorage.removeItem('tau_fs_'+prefix);}catch(e){}
+  // Remove route button active states
+  ['A','B'].forEach(function(r){var btn=document.getElementById(prefix+'-route-'+r);if(btn)btn.classList.remove('route-active');});
   // Render
   if(prefix==='live')      renderLive();
   else if(prefix==='sold') renderSold();
@@ -2231,8 +2265,8 @@ function hbar(label,val,max,suffix){suffix=suffix||'';return '<div class="hbar-r
     var sl  = d.status==='active'?'LIVE':d.status==='upcoming'?'SOON':'SOLD';
     return '<tr>'
       +'<td class="mono" style="font-size:11px">'+esc(d.sno||d.stk.slice(0,8))+'</td>'
-      +'<td><div class="bold" style="font-size:12.5px">'+esc(d.make)+' '+esc(d.model)+'</div>'
-      +'<span class="badge '+sb+'" style="font-size:9.5px">'+sl+'</span></td>'
+      +'<td><span class="badge '+sb+'" style="font-size:9.5px">'+sl+'</span></td>'
+      +'<td class="bold">'+esc(d.make)+' '+esc(d.model)+'</td>'
       +'<td class="grade-cell" style="max-width:130px" title="'+esc(d.grade||'')+'">'+esc(d.grade||'—')+'</td>'
       +'<td class="mono">'+(d.year||'—')+'</td>'
       +'<td class="mono">'+(d.mileage?d.mileage.toLocaleString():'—')+'</td>'
@@ -2244,7 +2278,7 @@ function hbar(label,val,max,suffix){suffix=suffix||'';return '<div class="hbar-r
       +'<td><button class="btn bp bxs" onclick="addToBatch(\''+d.stk+'\')">+Batch</button></td>'
       +'<td><a href="'+d.url+'" target="_blank" style="color:var(--bl);font-size:13px">↗</a></td>'
       +'</tr>';
-  }).join('') : '<tr><td colspan="12" style="text-align:center;padding:24px;color:var(--ink4)">No listings match</td></tr>';
+  }).join('') : '<tr><td colspan="13" style="text-align:center;padding:24px;color:var(--ink4)">No listings match</td></tr>';
 }
 function exportCSV(){
   var cols=['stk','sno','status','make','model','grade','year','mileage','fuel','damage','dc','price','bids','url'];
@@ -2730,6 +2764,10 @@ function loadLiveData(){
     .then(function(data){
       if(data&&data.length>0){
         ALL_DATA=data;
+        // Ensure url field exists for all listings (pre-url scraper versions)
+        ALL_DATA.forEach(function(d){
+          if(!d.url&&d.stk)d.url='https://www.tau-trade.com/sal_frt/stock/detail?stkNo='+d.stk;
+        });
         var el=document.getElementById('sync-status');
         if(el)el.textContent=data.length+' listings';
         console.log('Loaded '+data.length+' live listings');
