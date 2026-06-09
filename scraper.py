@@ -24,7 +24,8 @@ DISCOVER_PAGES   = 200    # ceiling — smart stopping exits much earlier in pra
 INITIAL_PAGES    = 200    # kept for backwards compat — now same as DISCOVER_PAGES
 REQUEST_DELAY    = 1.5    # seconds between fetches
 MAX_RECHECK      = 150    # active + upcoming re-checks per run (was 60)
-MAX_REVALIDATE   = 150    # ended listings with unverified prices to re-validate per run
+MAX_REVALIDATE   = 200    # ended listings to re-validate/heal per run
+MAX_HEAL_ATTEMPTS = 3     # give up healing a blank ended listing after this many failed fetches
 
 # ── Paths ──────────────────────────────────────────────────────────────────────
 ROOT          = os.path.dirname(os.path.abspath(__file__))
@@ -498,11 +499,17 @@ def main():
             checked += 1
             time.sleep(RECHECK_DELAY)
 
-    # ── 4. Re-validate prices for ended listings with unverified prices ─────────
-    # Targets listings where price_source is not 'extracted' (wrong/missing price)
-    # Runs up to MAX_REVALIDATE per day until all historical prices are corrected
+    # ── 4. Re-validate / heal ended listings ───────────────────────────────────
+    # Targets ended listings that are either (a) missing make/model — blank rows
+    # from a failed detail fetch — or (b) have an unverified price.
+    # Blank rows are prioritised first. Up to MAX_REVALIDATE per run.
+    # A listing whose page repeatedly fails to yield make/model is marked
+    # heal_failed after MAX_HEAL_ATTEMPTS so we stop re-fetching dead 404 pages.
     def _needs_reval(l):
         if l.get('status') != 'ended':
+            return False
+        # Give up on listings that have already failed to heal too many times
+        if l.get('heal_failed'):
             return False
         # Missing core fields (blank rows from a failed detail fetch) — top priority
         if not l.get('make') or not l.get('model'):
@@ -517,12 +524,13 @@ def main():
         key=lambda l: 0 if (not l.get('make') or not l.get('model')) else 1
     )[:MAX_REVALIDATE]
     if to_reval:
-        print(f"\n── Re-validating {len(to_reval)} price(s) for ended listings ──")
-        rv_fixed = rv_failed = 0
+        print(f"\n── Re-validating/healing {len(to_reval)} ended listing(s) ──")
+        rv_fixed = rv_failed = rv_dead = 0
         for listing in to_reval:
             if (time.monotonic() - run_start) > SAFETY_MINUTES * 60:
                 print(f"  ⚠ Safety limit — stopping re-validation early")
                 break
+            was_blank = (not listing.get('make') or not listing.get('model'))
             html = fetch_html(listing['url'])
             if html:
                 had_make = bool(listing.get('make'))
@@ -534,17 +542,45 @@ def main():
                     updated['ended_at'] = listing['ended_at']
                 if not updated.get('price_source') or updated['price_source'] not in ('extracted',):
                     updated['price_source'] = 're-checked'
-                by_stk[listing['stk']] = updated
                 filled_make = (not had_make) and bool(updated.get('make'))
+                # If still blank after a successful fetch, count a heal attempt
+                if was_blank and (not updated.get('make') or not updated.get('model')):
+                    attempts = listing.get('heal_attempts', 0) + 1
+                    updated['heal_attempts'] = attempts
+                    if attempts >= MAX_HEAL_ATTEMPTS:
+                        updated['heal_failed'] = True
+                        rv_dead += 1
+                        print(f"  ⊘ {listing['stk'][:12]}… still blank after "
+                              f"{attempts} tries — marked heal_failed")
+                    else:
+                        rv_failed += 1
+                elif filled_make:
+                    updated.pop('heal_attempts', None)  # healed — clear the counter
+                by_stk[listing['stk']] = updated
                 if updated.get('price_source') == 'extracted' or filled_make:
                     rv_fixed += 1
                     tag = ' [+make/model]' if filled_make else ''
                     print(f"  ✓ {updated.get('make',''):<8} {updated.get('model',''):<12} "
                           f"{fJ(updated.get('price')) if updated.get('price') else '—'}{tag}")
+                elif not was_blank:
+                    rv_failed += 1
+            else:
+                # Fetch failed (404 / network). Count a heal attempt for blank rows.
+                if was_blank:
+                    attempts = listing.get('heal_attempts', 0) + 1
+                    listing['heal_attempts'] = attempts
+                    if attempts >= MAX_HEAL_ATTEMPTS:
+                        listing['heal_failed'] = True
+                        rv_dead += 1
+                        print(f"  ⊘ {listing['stk'][:12]}… fetch failed "
+                              f"{attempts}× — marked heal_failed (likely delisted)")
+                    else:
+                        rv_failed += 1
                 else:
                     rv_failed += 1
             time.sleep(REQUEST_DELAY * 0.7)
-        print(f"  Re-validated: {rv_fixed} prices corrected, {rv_failed} still unavailable")
+        print(f"  Healed/validated: {rv_fixed} fixed, {rv_failed} retry next run, "
+              f"{rv_dead} marked dead")
 
     # ── 5. Save ────────────────────────────────────────────────────────────────
     all_listings = list(by_stk.values())
