@@ -187,46 +187,51 @@ def parse_time_left(html):
 # ── Table value extractor ──────────────────────────────────────────────────────
 def tv(html, *labels):
     """
-    Extract a spec-table value by its label. Resilient to TAU markup changes.
+    Extract a spec value by its label from TAU detail-page tables.
 
-    Tries several structures in order:
-      1. <th>label</th> <td>value</td>            (classic)
-      2. <td>label</td> <td>value</td>            (classic)
-      3. label cell then value cell, allowing ANY tags/whitespace/icons
-         between the closing label cell and the opening value cell
-         (covers <th>/<td> mixed, nested spans, icon imgs, newlines)
-      4. Generic "label ... </x> <y>value</y>" where x/y are td|th|div
-    The matched value has all tags stripped, whitespace collapsed, and the
-    Japanese placeholder dash (ー / —) treated as empty so callers fall back
-    to existing data instead of overwriting good values with a dash.
+    TAU's table markup nests the label inside <th><div><span>LABEL</span></div></th>
+    and the value in the following <td>. Older/simpler pages put the label
+    directly in <th>LABEL</th>. This parser handles BOTH by:
+      1. Finding every <th>…</th> … <td>…</td> pair across the whole page
+      2. Stripping ALL nested tags + HTML comments to get plain label/value text
+      3. Matching the requested label against the cleaned labels
+
+    Japanese placeholder dashes (ー / —) and "Need Login" are treated as empty
+    so callers fall back to existing data instead of overwriting good values.
     """
     def clean(raw):
-        v = re.sub(r'<[^>]+>', ' ', raw)
-        v = re.sub(r'\s+', ' ', v).strip()
-        # Treat TAU "no data" placeholders as empty
-        if v in ('ー', '—', '-', 'Need Login', ''):
-            return ''
-        return v
+        raw = re.sub(r'<!--.*?-->', ' ', raw, flags=re.DOTALL)  # drop comments
+        raw = re.sub(r'<[^>]+>', ' ', raw)                      # drop all tags
+        raw = (raw.replace('&amp;', '&').replace('&#39;', "'")
+                  .replace('&nbsp;', ' ').replace('&lt;', '<').replace('&gt;', '>'))
+        return re.sub(r'\s+', ' ', raw).strip()
+
+    def is_placeholder(v):
+        return v in ('ー', '—', '-', 'Need Login', '')
+
+    # Build label→value map from every th/td pair on the page (first wins)
+    if not hasattr(tv, '_cache_html') or tv._cache_html is not html:
+        pairs = {}
+        row_pat = re.compile(
+            r'<th\b[^>]*>(.*?)</th>\s*(?:<[^/][^>]*>\s*)*?<td\b[^>]*>(.*?)</td>',
+            re.IGNORECASE | re.DOTALL
+        )
+        for m in row_pat.finditer(html):
+            lbl = clean(m.group(1))
+            val = clean(m.group(2))
+            if lbl and lbl not in pairs:
+                pairs[lbl] = val
+        tv._cache_html  = html
+        tv._cache_pairs = pairs
+    pairs = tv._cache_pairs
 
     for label in labels:
-        esc = re.escape(label)
-        # Label cell must end at the label (allow trailing icons/whitespace),
-        # not match a longer label that merely contains this text.
-        pats = [
-            # 1 & 2: adjacent th/td or td/td, same row
-            rf'<th[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</th>\s*<td[^>]*>(.*?)</td>',
-            rf'<td[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</td>\s*<td[^>]*>(.*?)</td>',
-            # 3: label cell, then ANY markup, then the next value cell
-            rf'<(?:th|td)[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</(?:th|td)>(?:\s|<[^>]+>)*?<td[^>]*>(.*?)</td>',
-            # 4: div-based label/value pairs
-            rf'<(?:div|span)[^>]*>\s*{esc}\s*</(?:div|span)>(?:\s|<[^>]+>)*?<(?:div|span)[^>]*>(.*?)</(?:div|span)>',
-        ]
-        for pat in pats:
-            m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
-            if m:
-                val = clean(m.group(1))
-                if val:
-                    return val
+        if label in pairs and not is_placeholder(pairs[label]):
+            return pairs[label]
+        # partial match — label may carry a trailing tooltip word
+        for k, v in pairs.items():
+            if k.lower().startswith(label.lower()) and not is_placeholder(v):
+                return v
     return ''
 
 # ── Parse listing detail page ──────────────────────────────────────────────────
