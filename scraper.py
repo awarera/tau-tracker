@@ -186,17 +186,45 @@ def parse_time_left(html):
 
 # ── Table value extractor ──────────────────────────────────────────────────────
 def tv(html, *labels):
-    """Extract table cell value. Handles icon images after label text."""
+    """
+    Extract a spec-table value by its label. Resilient to TAU markup changes.
+
+    Tries several structures in order:
+      1. <th>label</th> <td>value</td>            (classic)
+      2. <td>label</td> <td>value</td>            (classic)
+      3. label cell then value cell, allowing ANY tags/whitespace/icons
+         between the closing label cell and the opening value cell
+         (covers <th>/<td> mixed, nested spans, icon imgs, newlines)
+      4. Generic "label ... </x> <y>value</y>" where x/y are td|th|div
+    The matched value has all tags stripped, whitespace collapsed, and the
+    Japanese placeholder dash (ー / —) treated as empty so callers fall back
+    to existing data instead of overwriting good values with a dash.
+    """
+    def clean(raw):
+        v = re.sub(r'<[^>]+>', ' ', raw)
+        v = re.sub(r'\s+', ' ', v).strip()
+        # Treat TAU "no data" placeholders as empty
+        if v in ('ー', '—', '-', 'Need Login', ''):
+            return ''
+        return v
+
     for label in labels:
         esc = re.escape(label)
-        for pat in [
-            rf'<th[^>]*>[^<]*{esc}.*?</th>\s*<td[^>]*>(.*?)</td>',
-            rf'<td[^>]*>[^<]*{esc}.*?</td>\s*<td[^>]*>(.*?)</td>',
-        ]:
+        # Label cell must end at the label (allow trailing icons/whitespace),
+        # not match a longer label that merely contains this text.
+        pats = [
+            # 1 & 2: adjacent th/td or td/td, same row
+            rf'<th[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</th>\s*<td[^>]*>(.*?)</td>',
+            rf'<td[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</td>\s*<td[^>]*>(.*?)</td>',
+            # 3: label cell, then ANY markup, then the next value cell
+            rf'<(?:th|td)[^>]*>\s*{esc}\s*(?:<[^>]+>\s*)*</(?:th|td)>(?:\s|<[^>]+>)*?<td[^>]*>(.*?)</td>',
+            # 4: div-based label/value pairs
+            rf'<(?:div|span)[^>]*>\s*{esc}\s*</(?:div|span)>(?:\s|<[^>]+>)*?<(?:div|span)[^>]*>(.*?)</(?:div|span)>',
+        ]
+        for pat in pats:
             m = re.search(pat, html, re.IGNORECASE | re.DOTALL)
             if m:
-                val = re.sub(r'<[^>]+>', ' ', m.group(1)).strip()
-                val = re.sub(r'\s+', ' ', val).strip()
+                val = clean(m.group(1))
                 if val:
                     return val
     return ''
@@ -390,6 +418,7 @@ def main():
 
     run_start      = time.monotonic()  # track wall time for safety valve
     SAFETY_MINUTES = 75                   # stop loops if approaching 90-min timeout
+    now_iso        = datetime.now(timezone.utc).isoformat()  # for status changes this run
     listings  = load_json(LISTINGS_FILE, [])
     by_stk    = {l['stk']: l for l in listings}
     n_active  = sum(1 for l in listings if l.get('status') == 'active')
@@ -459,17 +488,29 @@ def main():
                             print(f"  → ended (past {ends_str[:10]}) {listing_now.get('make','')} {listing_now.get('model','')}")
                     except Exception: pass
                 # If no auction_ends_at or it hasn't passed, leave status unchanged
-                print(f"  ↻ {updated.get('make',''):<8} {updated.get('model',''):<12} "
-                      f"{updated['bids']:>3}b{delta}{change}")
+                print(f"  ✗ fetch failed — {listing_now.get('make','?'):<8} "
+                      f"{listing_now.get('model','?'):<12} (status unchanged)")
             checked += 1
             time.sleep(RECHECK_DELAY)
 
     # ── 4. Re-validate prices for ended listings with unverified prices ─────────
     # Targets listings where price_source is not 'extracted' (wrong/missing price)
     # Runs up to MAX_REVALIDATE per day until all historical prices are corrected
-    to_reval = [l for l in by_stk.values()
-                if l.get('status') == 'ended'
-                and l.get('price_source', 'none') not in ('extracted', 're-checked')][:MAX_REVALIDATE]
+    def _needs_reval(l):
+        if l.get('status') != 'ended':
+            return False
+        # Missing core fields (blank rows from a failed detail fetch) — top priority
+        if not l.get('make') or not l.get('model'):
+            return True
+        # Or price never verified from the detail page
+        if l.get('price_source', 'none') not in ('extracted', 're-checked'):
+            return True
+        return False
+    # Blank-field rows first, then price-only rows
+    to_reval = sorted(
+        [l for l in by_stk.values() if _needs_reval(l)],
+        key=lambda l: 0 if (not l.get('make') or not l.get('model')) else 1
+    )[:MAX_REVALIDATE]
     if to_reval:
         print(f"\n── Re-validating {len(to_reval)} price(s) for ended listings ──")
         rv_fixed = rv_failed = 0
@@ -479,16 +520,23 @@ def main():
                 break
             html = fetch_html(listing['url'])
             if html:
-                new_price, new_source = extract_price(html)
-                if new_source == 'extracted' and new_price:
-                    listing['price']        = new_price
-                    listing['price_source'] = 'extracted'
+                had_make = bool(listing.get('make'))
+                # Full re-parse: fills make/model/year/km AND price from detail page
+                updated = parse_listing(listing['stk'], html, existing=listing)
+                # Preserve ended status — re-parse may read a stale countdown
+                updated['status'] = 'ended'
+                if 'ended_at' not in updated and 'ended_at' in listing:
+                    updated['ended_at'] = listing['ended_at']
+                if not updated.get('price_source') or updated['price_source'] not in ('extracted',):
+                    updated['price_source'] = 're-checked'
+                by_stk[listing['stk']] = updated
+                filled_make = (not had_make) and bool(updated.get('make'))
+                if updated.get('price_source') == 'extracted' or filled_make:
                     rv_fixed += 1
-                    print(f"  ✓ {listing.get('make',''):<8} {listing.get('model',''):<12} "
-                          f"{fJ(new_price)}")
+                    tag = ' [+make/model]' if filled_make else ''
+                    print(f"  ✓ {updated.get('make',''):<8} {updated.get('model',''):<12} "
+                          f"{fJ(updated.get('price')) if updated.get('price') else '—'}{tag}")
                 else:
-                    # Mark as re-checked so we don't attempt again needlessly
-                    listing['price_source'] = 're-checked'
                     rv_failed += 1
             time.sleep(REQUEST_DELAY * 0.7)
         print(f"  Re-validated: {rv_fixed} prices corrected, {rv_failed} still unavailable")
